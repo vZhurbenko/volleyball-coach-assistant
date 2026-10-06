@@ -64,8 +64,11 @@ jobs:
       # ---------- Notifications ----------
       # Без parse_mode=HTML: значения из github.* не экранируются, и разметка
       # из имени ветки попала бы прямо в сообщение.
+      # continue-on-error: уведомление отправляется уже после деплоя, и его
+      # падение не должно красить в красный успешный прогон.
       - name: Notify Telegram — success
         if: ${{ success() && env.TELEGRAM_BOT_TOKEN != '' }}
+        continue-on-error: true
         env:
           REPO: ${{ github.repository }}
           REF_NAME: ${{ github.ref_name }}
@@ -80,6 +83,7 @@ jobs:
 
       - name: Notify Telegram — failure
         if: ${{ failure() && env.TELEGRAM_BOT_TOKEN != '' }}
+        continue-on-error: true
         env:
           REPO: ${{ github.repository }}
           REF_NAME: ${{ github.ref_name }}
