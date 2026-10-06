@@ -35,17 +35,20 @@ jobs:
         run: npm run build
 
       # ---------- Deploy ----------
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.10.0
-        with:
-          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
-
-      - name: Add server to known hosts
+      # Приватный ключ пишем в файл сами, а не отдаём стороннему action.
+      # Хост-ключ сервера берём из секрета, а не через ssh-keyscan: keyscan
+      # выполняется в момент деплоя и потому уязвим к MITM.
+      - name: Configure SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy static build
         env:
@@ -54,13 +57,13 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
           rsync -avz --delete \
-            -e ssh \
+            -e "ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes" \
             ./dist/ \
             "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}"
 
       # ---------- Notifications ----------
-      # Значения из github.* передаём через env, а не интерполируем в run:
-      # иначе имя ветки с shell-метасимволами попало бы прямо в команду.
+      # Без parse_mode=HTML: значения из github.* не экранируются, и разметка
+      # из имени ветки попала бы прямо в сообщение.
       - name: Notify Telegram — success
         if: ${{ success() && env.TELEGRAM_BOT_TOKEN != '' }}
         env:
@@ -70,7 +73,6 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "parse_mode=HTML" \
             --data-urlencode "text=✅ Deploy successful!
           Repository: ${REPO}
           Branch: ${REF_NAME}
@@ -85,7 +87,6 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "parse_mode=HTML" \
             --data-urlencode "text=❌ Deploy failed!
           Repository: ${REPO}
           Branch: ${REF_NAME}
