@@ -1,9 +1,6 @@
-<script setup>
-import TheWelcome from '../components/TheWelcome.vue'
-</script>
-
 <template>
   <main>
-    <TheWelcome />
+    <h1>Помощник тренера</h1>
+    <p>Экраны расстановки, матча и итогов появятся здесь.</p>
   </main>
 </template>
