@@ -1,4 +1,5 @@
 import { ZONES } from './constants.js'
+import { liberoZone } from './libero.js'
 import { rotates, slotInZone } from './rotation.js'
 import { addPoint, initialScore, startNextSet } from './score.js'
 import { addStat, initStats } from './stats.js'
@@ -55,7 +56,7 @@ export function matchState(events) {
 
 /**
  * Кто стоит в каждой зоне площадки: расстановка партии, сдвинутая ротацией,
- * с учётом замен.
+ * с учётом замен и выхода либеро.
  *
  * @param {MatchState} state
  * @returns {Record<number, string>}
@@ -66,6 +67,14 @@ export function playersOnCourt(state) {
   for (const zone of ZONES) {
     zones[zone] = playerInSlot(state.substitutions, slotInZone(zone, state.rotations))
   }
+
+  const libero = liberoZone({
+    lineup: state.lineup,
+    rotations: state.rotations,
+    liberoId: state.lineup.liberoId,
+    serving: state.score.serving,
+  })
+  if (libero !== null) zones[libero] = state.lineup.liberoId
 
   return zones
 }
