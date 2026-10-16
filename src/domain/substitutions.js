@@ -74,6 +74,17 @@ export function substitutionsLeft(state) {
 }
 
 /**
+ * Кто сейчас занимает позицию слота — стартовый или вышедший запасной.
+ *
+ * @param {Substitutions} state
+ * @param {number} slotNumber
+ * @returns {string}
+ */
+export function playerInSlot(state, slotNumber) {
+  return onCourtId(state.slots[slotNumber])
+}
+
+/**
  * Делает замену. Нелегальную замену совершить нельзя: вместо нового состояния
  * возвращается отказ с причиной.
  *

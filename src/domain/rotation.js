@@ -30,6 +30,33 @@ export function rotate(lineup) {
 }
 
 /**
+ * В какой зоне сейчас стоит слот: каждый переход подачи сдвигает его на зону
+ * по часовой стрелке. Шесть сдвигов возвращают слот на место.
+ *
+ * @param {number} slot — стартовая зона игрока
+ * @param {number} rotations — сколько сдвигов сделано в партии
+ */
+export function zoneOfSlot(slot, rotations) {
+  let zone = slot
+
+  for (let step = 0; step < rotations % ZONES.length; step += 1) {
+    zone = ROTATION[zone]
+  }
+
+  return zone
+}
+
+/**
+ * Какой слот стоит в зоне — обратный сдвиг к `zoneOfSlot`.
+ *
+ * @param {number} zone
+ * @param {number} rotations
+ */
+export function slotInZone(zone, rotations) {
+  return ZONES.find((slot) => zoneOfSlot(slot, rotations) === zone)
+}
+
+/**
  * Сдвигаемся ли мы после розыгрыша. Сдвиг — только при переходе подачи к нам,
  * то есть когда очко взято на чужой подаче. Очко на своей подаче сдвига не даёт.
  *
