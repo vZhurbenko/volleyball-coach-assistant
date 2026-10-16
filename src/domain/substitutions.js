@@ -8,21 +8,30 @@ import { MATCH_RULES, ZONES } from './constants.js'
  * слот стоит.
  *
  * Лимит и пары считаются в пределах партии, поэтому состояние заводится заново
- * на каждую партию.
+ * на каждую партию. Выбывшие игроки и исключительные замены — факты матча,
+ * они переживают границу партии.
  */
 
 /**
  * @typedef {object} SubstitutionSlot
- * @property {string} starterId
+ * @property {string} starterId — хозяин позиции, он же единственный, кому она обязана вернуться
  * @property {string | null} substituteId — запасной пары, фиксируется при первой замене слота
  * @property {'starter' | 'substitute'} onCourt
  * @property {boolean} starterReentered — стартовый уже возвращался, пара исчерпана
  */
 
 /**
+ * @typedef {object} ExceptionalSubstitution
+ * @property {string} outgoingId — выбывший игрок
+ * @property {string} incomingId
+ */
+
+/**
  * @typedef {object} Substitutions
  * @property {number} used — израсходовано замен в партии
  * @property {Record<number, SubstitutionSlot>} slots
+ * @property {string[]} retired — выбывшие до конца матча
+ * @property {ExceptionalSubstitution[]} exceptional — для пометок в итогах
  */
 
 /**
@@ -33,12 +42,14 @@ import { MATCH_RULES, ZONES } from './constants.js'
 
 /**
  * Открывает счёт замен для новой партии: на площадке стартовая шестёрка,
- * лимит не тронут.
+ * лимит не тронут. Выбывшие и исключительные замены переносятся из прошлой
+ * партии — это факты матча, а не партии.
  *
  * @param {import('./lineup.js').Lineup} lineup
+ * @param {Substitutions} [previousSet] — состояние прошлой партии
  * @returns {Substitutions}
  */
-export function initSubstitutions(lineup) {
+export function initSubstitutions(lineup, previousSet) {
   const slots = {}
   for (const zone of ZONES) {
     slots[zone] = {
@@ -49,7 +60,12 @@ export function initSubstitutions(lineup) {
     }
   }
 
-  return { used: 0, slots }
+  return {
+    used: 0,
+    slots,
+    retired: previousSet?.retired ?? [],
+    exceptional: previousSet?.exceptional ?? [],
+  }
 }
 
 /** @param {Substitutions} state */
@@ -66,11 +82,17 @@ export function substitutionsLeft(state) {
  * пара исчерпана — третий игрок в неё не встаёт.
  *
  * @param {Substitutions} state
- * @param {{ outgoingId: string, incomingId: string }} request
+ * @param {{ outgoingId: string, incomingId: string, exceptional?: boolean }} request
+ *   `exceptional` — замена при травме, болезни или удалении: идёт сверх лимита
+ *   и правил пар, а заменённый выбывает до конца матча
  * @returns {{ ok: true, state: Substitutions } | { ok: false, reason: SubstitutionRefusal }}
  */
-export function substitute(state, { outgoingId, incomingId }) {
-  if (substitutionsLeft(state) === 0) {
+export function substitute(state, { outgoingId, incomingId, exceptional = false }) {
+  if (state.retired.includes(incomingId)) {
+    return refuse('PLAYER_RETIRED', 'Игрок выбыл до конца матча')
+  }
+
+  if (!exceptional && substitutionsLeft(state) === 0) {
     return refuse(
       'SUBSTITUTION_LIMIT_REACHED',
       `Лимит замен в партии исчерпан (${MATCH_RULES.SUBSTITUTIONS_PER_SET})`,
@@ -84,6 +106,10 @@ export function substitute(state, { outgoingId, incomingId }) {
 
   if (isOnCourt(state, incomingId)) {
     return refuse('PLAYER_ALREADY_ON_COURT', 'Входящий игрок уже на площадке')
+  }
+
+  if (exceptional) {
+    return { ok: true, state: applyExceptional(state, slotNumber, outgoingId, incomingId) }
   }
 
   const slot = state.slots[slotNumber]
@@ -121,7 +147,29 @@ function apply(state, slotNumber, incomingId) {
     ? { ...slot, onCourt: 'starter', starterReentered: true }
     : { ...slot, substituteId: incomingId, onCourt: 'substitute' }
 
-  return { used: state.used + 1, slots: { ...state.slots, [slotNumber]: nextSlot } }
+  return { ...state, used: state.used + 1, slots: { ...state.slots, [slotNumber]: nextSlot } }
+}
+
+/**
+ * Выбывший уходит из матча, а вошедший становится хозяином позиции: дальше слот
+ * живёт по обычным правилам, поэтому замена не выключает позицию до конца матча.
+ * Лимит не расходуется.
+ */
+function applyExceptional(state, slotNumber, outgoingId, incomingId) {
+  return {
+    ...state,
+    slots: {
+      ...state.slots,
+      [slotNumber]: {
+        starterId: incomingId,
+        substituteId: null,
+        onCourt: 'starter',
+        starterReentered: false,
+      },
+    },
+    retired: [...state.retired, outgoingId],
+    exceptional: [...state.exceptional, { outgoingId, incomingId }],
+  }
 }
 
 function refuse(code, message) {

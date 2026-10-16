@@ -20,6 +20,25 @@ function swapAndReturn(state, starterId, substituteId) {
   return swap(swap(state, starterId, substituteId), substituteId, starterId)
 }
 
+/** Исключительная замена; падает, если ядро отказало. */
+function swapExceptional(state, outgoingId, incomingId) {
+  const result = substitute(state, { outgoingId, incomingId, exceptional: true })
+  expect(
+    result.ok,
+    `исключительная замена ${outgoingId} → ${incomingId}: ${result.reason?.message}`,
+  ).toBe(true)
+  return result.state
+}
+
+/** Партия, в которой лимит шести замен уже израсходован. */
+function spentLimit() {
+  let state = initSubstitutions(SIX)
+  state = swapAndReturn(state, 'morozov', 'tikhonov')
+  state = swapAndReturn(state, 'sokolov', 'gusev')
+  state = swapAndReturn(state, 'lebedev', 'orlov')
+  return state
+}
+
 describe('initSubstitutions', () => {
   it('puts the starting six on court', () => {
     const state = initSubstitutions(SIX)
@@ -116,10 +135,7 @@ describe('substitute', () => {
   })
 
   it('refuses a substitution once the limit of six is spent', () => {
-    let state = initSubstitutions(SIX)
-    state = swapAndReturn(state, 'morozov', 'tikhonov')
-    state = swapAndReturn(state, 'sokolov', 'gusev')
-    state = swapAndReturn(state, 'lebedev', 'orlov')
+    const state = spentLimit()
     expect(substitutionsLeft(state)).toBe(0)
 
     const result = substitute(state, { outgoingId: 'volkov', incomingId: 'krylov' })
@@ -145,5 +161,113 @@ describe('substitute', () => {
     for (const { reason } of refusals) {
       expect(reason.message).toMatch(/[А-Яа-я]/)
     }
+  })
+})
+
+describe('exceptional substitution', () => {
+  it('goes through when the limit of six is spent', () => {
+    const result = substitute(spentLimit(), {
+      outgoingId: 'volkov',
+      incomingId: 'krylov',
+      exceptional: true,
+    })
+    expect(result.ok).toBe(true)
+  })
+
+  it('does not spend the substitution limit', () => {
+    const state = swap(initSubstitutions(SIX), 'morozov', 'tikhonov')
+    const after = swapExceptional(state, 'volkov', 'krylov')
+
+    expect(substitutionsLeft(after)).toBe(MATCH_RULES.SUBSTITUTIONS_PER_SET - 1)
+  })
+
+  it('retires the replaced player for the rest of the match', () => {
+    const state = swapExceptional(initSubstitutions(SIX), 'morozov', 'tikhonov')
+    expect(state.retired).toEqual(['morozov'])
+  })
+
+  it('hands the position to the player who came in', () => {
+    const state = swapExceptional(initSubstitutions(SIX), 'morozov', 'tikhonov')
+    expect(state.slots[3]).toEqual({
+      starterId: 'tikhonov',
+      substituteId: null,
+      onCourt: 'starter',
+      starterReentered: false,
+    })
+  })
+
+  it('records the substitution for the summary', () => {
+    const state = swapExceptional(initSubstitutions(SIX), 'morozov', 'tikhonov')
+    expect(state.exceptional).toEqual([{ outgoingId: 'morozov', incomingId: 'tikhonov' }])
+  })
+
+  it('keeps ordinary substitutions out of the record', () => {
+    const state = swap(initSubstitutions(SIX), 'morozov', 'tikhonov')
+    expect(state.exceptional).toEqual([])
+  })
+
+  it('refuses to bring a retired player back', () => {
+    const state = swapExceptional(initSubstitutions(SIX), 'morozov', 'tikhonov')
+    const result = substitute(state, { outgoingId: 'sokolov', incomingId: 'morozov' })
+
+    expect(result.ok).toBe(false)
+    expect(result.reason.code).toBe('PLAYER_RETIRED')
+  })
+
+  it('keeps the retired player out in the next set', () => {
+    const state = swapExceptional(initSubstitutions(SIX), 'morozov', 'tikhonov')
+    const nextSet = initSubstitutions(SIX, state)
+    const result = substitute(nextSet, { outgoingId: 'sokolov', incomingId: 'morozov' })
+
+    expect(nextSet.retired).toEqual(['morozov'])
+    expect(result.reason.code).toBe('PLAYER_RETIRED')
+  })
+
+  it('starts the first set with nobody retired', () => {
+    const state = initSubstitutions(SIX)
+    expect(state.retired).toEqual([])
+    expect(state.exceptional).toEqual([])
+  })
+
+  it('gives the next set the full limit again', () => {
+    const state = swapExceptional(spentLimit(), 'volkov', 'krylov')
+    expect(substitutionsLeft(initSubstitutions(SIX, state))).toBe(MATCH_RULES.SUBSTITUTIONS_PER_SET)
+  })
+
+  it('leaves ordinary substitutions working afterwards', () => {
+    const after = swap(
+      swapExceptional(initSubstitutions(SIX), 'morozov', 'tikhonov'),
+      'sokolov',
+      'gusev',
+    )
+
+    expect(after.slots[2].substituteId).toBe('gusev')
+    expect(after.used).toBe(1)
+  })
+
+  it('works for a substitute who is on court', () => {
+    const state = swap(initSubstitutions(SIX), 'morozov', 'tikhonov')
+    const after = swapExceptional(state, 'tikhonov', 'gusev')
+
+    expect(after.retired).toEqual(['tikhonov'])
+    expect(after.slots[3].starterId).toBe('gusev')
+  })
+
+  it('still refuses an outgoing player who is not on court', () => {
+    const result = substitute(initSubstitutions(SIX), {
+      outgoingId: 'krylov',
+      incomingId: 'tikhonov',
+      exceptional: true,
+    })
+    expect(result.reason.code).toBe('PLAYER_NOT_ON_COURT')
+  })
+
+  it('still refuses an incoming player who is already on court', () => {
+    const result = substitute(initSubstitutions(SIX), {
+      outgoingId: 'morozov',
+      incomingId: 'volkov',
+      exceptional: true,
+    })
+    expect(result.reason.code).toBe('PLAYER_ALREADY_ON_COURT')
   })
 })
