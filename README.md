@@ -1,50 +1,76 @@
 # volleyball-coach-assistant
 
-This template should help get you started developing with Vue 3 in Vite.
+Веб-приложение для тренера волейбольной команды: расстановка стартового состава,
+ведение статистики матча вживую и короткая итоговая сводка.
 
-## Recommended IDE Setup
+Статический SPA на Vue 3, **без бэкенда**: открывается по ссылке, без входа и пароля.
+Данные хранятся локально в браузере — у каждого, кто откроет ссылку, свои.
+Обмен результатами — печатью итогового экрана средствами браузера.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Статус
 
-## Recommended Browser Setup
+План работ — [issues майлстоуна «MVP»](https://github.com/vZhurbenko/volleyball-coach-assistant/milestone/1):
+сделано 14, осталось 12. Отдельного документа с планом нет — план это и есть issues.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+**Готово ядро** (#6–#17) — правила волейбола отдельно от интерфейса, без единой
+строчки Vue:
 
-## Customize configuration
+| Модуль                       | Что делает                                                         |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `constants.js`, `players.js` | роли, зоны, лимиты, мок-состав команды                             |
+| `lineup.js`                  | проверка стартовой расстановки с текстами нарушений                |
+| `score.js`                   | очко, партия до 25 (пятая до 15), матч до трёх побед, подача       |
+| `streaks.js`                 | серии очков: «соперник +3, мы +2, …»                               |
+| `rotation.js`                | автоматический сдвиг шестёрки при переходе подачи                  |
+| `substitutions.js`           | замены по FIVB: лимит 6, фиксированные пары, исключительная замена |
+| `libero.js`                  | выход либеро вместо ЦБ задней линии                                |
+| `stats.js`                   | пять счётчиков по партиям и сумма за матч                          |
+| `match.js`                   | журнал событий и редьюсер: из него собирается всё состояние        |
+| `formations.js`              | координаты игрового режима (приём) для шести расстановок           |
+| `storage.js`                 | текущий матч в `localStorage`                                      |
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+Журнал событий — источник истины: счёт, подача, ротация, состав на площадке,
+серии и статистика выводятся из него. Поэтому отмена очка — это удаление события
+и пересчёт, а перезагрузка страницы восстанавливает матч как был.
 
-## Project Setup
+**Осталось:** экраны (#18–#28) и приёмка сквозного сценария (#29).
+
+## Документация
+
+- [`docs/requirements.md`](docs/requirements.md) — требования, продиктованные тренером.
+- [`docs/formations.md`](docs/formations.md) — откуда взяты координаты приёма и что в них адаптировано.
+
+## Разработка
 
 ```sh
 npm install
+npm run dev          # дев-сервер с горячей перезагрузкой
+npm run test:unit    # тесты (Vitest)
+npm run lint         # oxlint + ESLint
+npm run build        # сборка в dist/
 ```
 
-### Compile and Hot-Reload for Development
+Тесты гоняются в watch-режиме; разовый прогон — `npm run test:unit -- --run`.
 
-```sh
-npm run dev
+Работа идёт по одному issue: ветка от `master` → PR → CI (lint, тесты, сборка) →
+merge. Из `master` собирается и деплоится статика, уведомление о деплое уходит
+в Telegram.
+
+## Структура
+
+```
+src/
+├── domain/      ядро: правила волейбола, без Vue
+├── storage.js   сохранение текущего матча
+├── views/       экраны
+├── router/      маршруты
+└── main.js
 ```
 
-### Compile and Minify for Production
+Ядро в `domain/` не знает про Vue: это чистые функции над состоянием, поэтому
+правила покрыты обычными unit-тестами и не зависят от интерфейса.
 
-```sh
-npm run build
-```
+## IDE
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar),
+Vetur при этом лучше отключить.
