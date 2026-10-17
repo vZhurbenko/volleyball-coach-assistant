@@ -4,7 +4,9 @@ import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 
+import MatchCourt from '../components/MatchCourt.vue'
 import MatchScoreboard from '../components/MatchScoreboard.vue'
+import { MOCK_ROSTER } from '../domain/players.js'
 import { useMatchStore } from '../stores/match.js'
 
 const props = defineProps({
@@ -35,6 +37,8 @@ function resetMatch() {
         :opponent="settings.opponent || 'Соперник'"
         @point="matchStore.addPoint"
       />
+
+      <MatchCourt :state="state" :roster="MOCK_ROSTER" />
 
       <div class="match-actions">
         <button
