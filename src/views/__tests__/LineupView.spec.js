@@ -148,6 +148,21 @@ describe('LineupView', () => {
     expect(zone.text()).not.toContain('Панчишкина')
   })
 
+  it('offers only players not assigned to other zones', async () => {
+    const { wrapper } = await mountView()
+
+    await openZone(wrapper, 4)
+
+    const ids = wrapper.findAll('[data-player-id]').map((item) => item.attributes('data-player-id'))
+    // Все, кто стоит в других зонах, недоступны.
+    expect(ids).not.toContain('titov')
+    expect(ids).not.toContain('gromov')
+    expect(ids).not.toContain('abroskin')
+    // Игрок этой зоны остаётся — ему можно сменить роль.
+    expect(ids).toContain('panchishkina')
+    expect(ids).toContain('fatkulin')
+  })
+
   it('lets the coach override the role on assignment', async () => {
     const { wrapper } = await mountView()
 

@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { ROLES, ZONES } from '../constants.js'
 import { findPlayer } from '../players.js'
 import { MOCK_ROSTER } from './fixtures/roster.js'
-import { defaultLineup, emptyLineup, validateLineup } from '../lineup.js'
+import { defaultLineup, emptyLineup, availablePlayersForZone, validateLineup } from '../lineup.js'
 
 /** Карта пустых зон: { 1: null, …, 6: null }. */
 function emptyZones() {
@@ -66,6 +66,29 @@ describe('defaultLineup', () => {
 
   it('passes validation', () => {
     expect(validateLineup(defaultLineup(MOCK_ROSTER), MOCK_ROSTER).valid).toBe(true)
+  })
+})
+
+describe('availablePlayersForZone', () => {
+  it('excludes players assigned to other zones', () => {
+    const available = availablePlayersForZone(lineupFrom(VALID_SIX), MOCK_ROSTER, 4)
+    const ids = available.map((player) => player.id)
+
+    expect(ids).not.toContain('belov')
+    expect(ids).not.toContain('sokolov')
+    expect(ids).not.toContain('morozov')
+    expect(ids).not.toContain('lebedev')
+    expect(ids).not.toContain('volkov')
+  })
+
+  it('keeps the player already assigned to this zone', () => {
+    const available = availablePlayersForZone(lineupFrom(VALID_SIX), MOCK_ROSTER, 4)
+
+    expect(available.map((player) => player.id)).toContain('efimov')
+  })
+
+  it('returns the whole roster for an empty lineup', () => {
+    expect(availablePlayersForZone(emptyLineup(), MOCK_ROSTER, 3)).toEqual(MOCK_ROSTER)
   })
 })
 

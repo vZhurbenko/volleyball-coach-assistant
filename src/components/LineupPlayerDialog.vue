@@ -116,8 +116,10 @@ function assign(role) {
 .player-list {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--line);
   border-radius: 12px;
   list-style: none;

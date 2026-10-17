@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 import LineupCourt from '../components/LineupCourt.vue'
 import LineupPlayerDialog from '../components/LineupPlayerDialog.vue'
 import { ROLES } from '../domain/constants.js'
+import { availablePlayersForZone } from '../domain/lineup.js'
 import { findPlayer } from '../domain/players.js'
 import { TEAMS, currentSet, isMatchOver, isSetOver } from '../domain/score.js'
 import { useLineupStore } from '../stores/lineup.js'
@@ -56,6 +57,12 @@ const nextServingLabel = computed(() =>
 if (betweenSets.value) lineupStore.setLineup(state.value.lineup)
 
 const pickingZone = ref(null)
+
+const dialogPlayers = computed(() =>
+  pickingZone.value === null
+    ? roster.value
+    : availablePlayersForZone(lineup.value, roster.value, pickingZone.value),
+)
 
 function assign({ playerId, role }) {
   lineupStore.assign(pickingZone.value, { playerId, role })
@@ -174,7 +181,7 @@ function startNextSet() {
     <LineupPlayerDialog
       v-if="pickingZone !== null"
       :zone="pickingZone"
-      :players="roster"
+      :players="dialogPlayers"
       @assign="assign"
       @cancel="pickingZone = null"
     />
