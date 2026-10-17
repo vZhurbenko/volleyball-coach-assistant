@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { Fragment } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -118,6 +119,13 @@ describe('LineupView', () => {
     const { wrapper } = await mountView()
 
     expect(wrapper.text()).toContain('Расстановка')
+  })
+
+  it('renders a single root element for the screen transition', async () => {
+    // <Transition> в App не умеет анимировать фрагмент: у экрана должен быть один корень.
+    const { wrapper } = await mountView()
+
+    expect(wrapper.getCurrentComponent().subTree.type).not.toBe(Fragment)
   })
 
   it('prefills the starting six from the team roster', async () => {
