@@ -26,15 +26,23 @@ const winnerName = computed(() => {
 
   return setWinner(set.value) === TEAMS.US ? teamName.value : opponent.value
 })
+const winnerIsUs = computed(() => (set.value ? setWinner(set.value) === TEAMS.US : true))
 </script>
 
 <template>
   <section class="screen">
     <template v-if="state && set">
       <h1 class="set-result__title">Партия {{ set.number }} завершена</h1>
-      <p class="set-result__winner">
-        Победитель: {{ winnerName }} · {{ set.points.us }}:{{ set.points.them }}
-      </p>
+
+      <div class="set-result__result">
+        <p class="set-result__winner">
+          Победитель:
+          <span :class="winnerIsUs ? 'set-result__name--us' : 'set-result__name--them'">{{
+            winnerName
+          }}</span>
+        </p>
+        <p class="set-result__score">{{ set.points.us }}:{{ set.points.them }}</p>
+      </div>
 
       <SetPointLog
         :set="set"
@@ -64,8 +72,38 @@ const winnerName = computed(() => {
   line-height: 1.2;
 }
 
+.set-result__result {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
 .set-result__winner {
-  color: var(--color-muted);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.set-result__winner span {
+  font-weight: 700;
+}
+
+.set-result__name--us {
+  color: var(--us-deep);
+}
+
+.set-result__name--them {
+  color: var(--them-deep);
+}
+
+.set-result__score {
+  color: var(--ink);
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .button-block {

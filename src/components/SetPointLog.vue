@@ -59,20 +59,23 @@ const rows = computed(() => {
 }
 
 .point-log__title {
-  color: var(--color-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .point-log__scroll {
   max-height: 200px;
   overflow-y: auto;
-  border: 1px solid #e2e6ec;
+  border: 1px solid var(--line);
   border-radius: 10px;
+  background: var(--surface);
 }
 
 .point-log--tall .point-log__scroll {
-  max-height: 55vh;
+  max-height: none;
+  overflow: visible;
 }
 
 .point-log__table {
@@ -85,18 +88,19 @@ const rows = computed(() => {
 .point-log__table th,
 .point-log__table td {
   width: 50%;
-  padding: 5px 10px;
-  border-bottom: 1px solid #d7dde5;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
   text-align: center;
 }
 
 .point-log__table thead th {
   position: sticky;
   top: 0;
-  background: var(--color-surface);
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
+  background: #f5f7f9;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .point-log__table tbody tr:last-child td {
@@ -104,7 +108,7 @@ const rows = computed(() => {
 }
 
 .point-log__table td {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .point-log__score--us {

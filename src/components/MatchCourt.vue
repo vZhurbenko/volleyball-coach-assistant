@@ -109,8 +109,10 @@ const cells = computed(() =>
   aspect-ratio: 1 / 1;
   margin: 16px 0 28px;
   border-radius: 16px;
-  background: #e2a05f;
-  box-shadow: inset 0 0 0 3px rgb(255 255 255 / 55%);
+  background: var(--court);
+  box-shadow:
+    inset 0 3px 0 #fff,
+    inset 0 0 0 2px rgb(255 255 255 / 70%);
 }
 
 .court-half::before {
@@ -194,7 +196,7 @@ const cells = computed(() =>
 
 .court__number {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
 }
 

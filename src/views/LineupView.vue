@@ -114,30 +114,32 @@ function startNextSet() {
     </div>
 
     <template v-if="betweenSets">
-      <section class="set-break" data-field="set-break">
+      <section class="set-break board" data-field="set-break">
         <p class="set-break__title">Партия {{ state.setNumber }} завершена</p>
 
         <template v-if="isFifthSet">
-          <fieldset class="field field--choice">
+          <fieldset class="field">
             <legend class="field__label">Кто подаёт первым в 5-й партии</legend>
-            <label class="choice">
-              <input
-                v-model="tiebreakServing"
-                type="radio"
-                :value="TEAMS.US"
-                data-field="tiebreak-serving-us"
-              />
-              Мы
-            </label>
-            <label class="choice">
-              <input
-                v-model="tiebreakServing"
-                type="radio"
-                :value="TEAMS.THEM"
-                data-field="tiebreak-serving-them"
-              />
-              {{ opponentLabel }}
-            </label>
+            <div class="segmented">
+              <label class="segmented__option">
+                <input
+                  v-model="tiebreakServing"
+                  type="radio"
+                  :value="TEAMS.US"
+                  data-field="tiebreak-serving-us"
+                />
+                Мы
+              </label>
+              <label class="segmented__option">
+                <input
+                  v-model="tiebreakServing"
+                  type="radio"
+                  :value="TEAMS.THEM"
+                  data-field="tiebreak-serving-them"
+                />
+                {{ opponentLabel }}
+              </label>
+            </div>
           </fieldset>
           <p class="hint">Перед пятой партией подача разыгрывается жребием.</p>
         </template>
@@ -185,71 +187,59 @@ function startNextSet() {
   flex-direction: column;
   gap: 6px;
   margin: 0;
-  padding: 12px 12px 12px 28px;
-  border-radius: var(--radius);
-  background: #fdeceb;
-  color: #8a1f1a;
-  font-size: 0.95rem;
+  padding: 12px 14px 12px 30px;
+  border: 1px solid #efc9c5;
+  border-left: 3px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.9rem;
 }
 
 .set-break {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: var(--radius);
-  background: #eef3fb;
+  gap: 10px;
+  padding: 14px;
 }
 
 .set-break__title {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 0;
   border: 0;
 }
 
-.field--choice {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 20px;
-}
-
-.field--choice legend {
-  width: 100%;
-  padding: 0;
-}
-
 .field__label {
-  font-weight: 600;
-}
-
-.choice {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: var(--tap-size);
-  font-weight: 500;
+  padding: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .hint {
-  color: var(--color-muted);
-  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .libero {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .libero__label {
-  font-weight: 600;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .libero select {
@@ -257,7 +247,8 @@ function startNextSet() {
 }
 
 .libero__status {
-  font-size: 0.9rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
 }
 
 .button-block {

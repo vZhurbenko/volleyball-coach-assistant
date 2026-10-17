@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 
 import SetPointLog from '../components/SetPointLog.vue'
 import { TEAM_ROSTER, findPlayer } from '../domain/players.js'
-import { setsWon } from '../domain/score.js'
+import { TEAMS, setWinner, setsWon } from '../domain/score.js'
 import { STAT_LABELS, STAT_TYPES, countersForPlayer, countersForSet } from '../domain/stats.js'
 import { useLineupStore } from '../stores/lineup.js'
 import { useMatchStore } from '../stores/match.js'
@@ -85,27 +85,42 @@ function newGame() {
     <h1>Итоги матча</h1>
 
     <template v-if="state">
-      <section class="summary__card" data-field="match-result">
-        <h2>{{ teamName }} — {{ opponent }}</h2>
-        <p class="summary__score">{{ won.us }}:{{ won.them }}</p>
-        <p class="summary__sets">
-          <span v-for="set in sets" :key="set.number">
-            Партия {{ set.number }}: {{ set.points.us }}:{{ set.points.them }}
-          </span>
+      <section class="summary__hero board" data-field="match-result">
+        <p class="summary__teams">
+          <span class="summary__team--us">{{ teamName }}</span>
+          <span class="summary__vs">—</span>
+          <span class="summary__team--them">{{ opponent }}</span>
         </p>
+        <p class="summary__score">
+          <span class="summary__score--us">{{ won.us }}</span
+          ><span class="summary__score-sep">:</span
+          ><span class="summary__score--them">{{ won.them }}</span>
+        </p>
+        <ol class="set-chips">
+          <li
+            v-for="set in sets"
+            :key="set.number"
+            class="set-chip"
+            :class="setWinner(set) === TEAMS.US ? 'set-chip--us' : 'set-chip--them'"
+          >
+            <span class="set-chip__number">Партия {{ set.number }}</span>
+            <span class="set-chip__score">{{ set.points.us }}:{{ set.points.them }}</span>
+          </li>
+        </ol>
       </section>
 
       <section
         v-for="section in setSections"
         :key="section.set.number"
-        class="summary__card"
+        class="summary__card board"
         :data-set="section.set.number"
       >
-        <h2>
-          Партия {{ section.set.number }} · {{ section.set.points.us }}:{{
-            section.set.points.them
-          }}
-        </h2>
+        <div class="summary__set-head">
+          <h2>Партия {{ section.set.number }}</h2>
+          <span class="summary__set-score">
+            {{ section.set.points.us }}:{{ section.set.points.them }}
+          </span>
+        </div>
 
         <div v-if="section.rows.length" class="table-wrap">
           <table class="stats-table">
@@ -141,7 +156,7 @@ function newGame() {
         />
       </section>
 
-      <section class="summary__card" data-field="total-stats">
+      <section class="summary__card board" data-field="total-stats">
         <h2>За матч</h2>
         <div class="table-wrap">
           <table class="stats-table">
@@ -167,7 +182,7 @@ function newGame() {
 
       <section
         v-if="retiredPlayers.length || exceptionalSubstitutions.length"
-        class="summary__card"
+        class="summary__card board"
         data-field="substitutions"
       >
         <h2>Замены</h2>
@@ -214,14 +229,105 @@ function newGame() {
   gap: 16px;
 }
 
+.summary__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.summary__teams {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.summary__team--us {
+  color: var(--us-deep);
+}
+
+.summary__team--them {
+  color: var(--them-deep);
+}
+
+.summary__vs {
+  color: var(--line-strong);
+  font-weight: 500;
+}
+
+.summary__score {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  color: var(--ink);
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.summary__score--us {
+  color: var(--us);
+}
+
+.summary__score--them {
+  color: var(--them);
+}
+
+.summary__score-sep {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+.set-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.set-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.set-chip--us {
+  border-left-color: var(--us);
+}
+
+.set-chip--them {
+  border-left-color: var(--them);
+}
+
+.set-chip__number {
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.set-chip__score {
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
 .summary__card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  box-shadow: var(--shadow);
+  gap: 10px;
+  padding: 14px;
 }
 
 .summary__card h2 {
@@ -229,27 +335,29 @@ function newGame() {
 }
 
 .summary__card h3 {
-  margin-top: 4px;
-  font-size: 0.95rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
-.summary__score {
-  color: var(--color-text);
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.summary__sets {
+.summary__set-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  color: var(--color-muted);
-  font-size: 0.9rem;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.summary__set-score {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary__empty {
-  color: var(--color-muted);
-  font-size: 0.9rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
 }
 
 .table-wrap {
@@ -265,7 +373,7 @@ function newGame() {
 .stats-table th,
 .stats-table td {
   padding: 6px 8px;
-  border-bottom: 1px solid #e2e6ec;
+  border-bottom: 1px solid var(--line);
   text-align: left;
   white-space: nowrap;
 }
@@ -276,9 +384,26 @@ function newGame() {
 }
 
 .stats-table thead th {
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.stats-table tbody th {
+  font-weight: 650;
+}
+
+.stats-table tbody tr:last-child td,
+.stats-table tbody tr:last-child th {
+  border-bottom: 0;
+}
+
+.summary__card ul {
+  padding-left: 18px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .summary__actions {

@@ -203,17 +203,20 @@ function resetMatch() {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--us-deep);
   border-radius: var(--radius);
-  background: #eef3fb;
+  background: var(--surface);
 }
 
 .set-end h2 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 .set-end p {
-  color: var(--color-muted);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
 
 .set-end-backdrop {
@@ -233,18 +236,21 @@ function resetMatch() {
   gap: 10px;
   width: 100%;
   max-width: 420px;
-  padding: 20px;
+  padding: 18px;
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: var(--color-surface);
-  box-shadow: 0 10px 30px rgb(16 24 40 / 25%);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
 }
 
 .set-end-modal h2 {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
+  font-weight: 750;
 }
 
 .set-end-modal p {
-  color: var(--color-muted);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
 
 .set-end-modal .button-secondary {
@@ -256,8 +262,9 @@ function resetMatch() {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 3px;
   padding: 3px;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #e5e9ef;
+  background: #e7ebf0;
 }
 
 .court-switch__option {
@@ -265,14 +272,14 @@ function resetMatch() {
   padding: 0 6px;
   border-radius: 7px;
   background: transparent;
-  color: var(--color-muted);
+  color: var(--ink-soft);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .court-switch__option--active {
-  background: var(--color-surface);
-  color: var(--color-text);
+  background: var(--surface);
+  color: var(--ink);
   box-shadow: var(--shadow);
 }
 
@@ -283,8 +290,8 @@ function resetMatch() {
 }
 
 .button-secondary--danger {
-  border-color: #b42318;
-  color: #b42318;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .reset-confirm {
@@ -292,12 +299,13 @@ function resetMatch() {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border: 1px solid #f0c2bd;
-  border-radius: var(--radius);
-  background: #fdeceb;
+  border: 1px solid #efc9c5;
+  border-left: 3px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-bg);
 }
 
 .reset-confirm p {
-  color: #8a1f1a;
+  color: var(--danger);
 }
 </style>
