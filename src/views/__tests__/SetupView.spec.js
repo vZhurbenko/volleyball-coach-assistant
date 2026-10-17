@@ -4,11 +4,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { ROLES } from '../../domain/constants.js'
 import { defaultLineup } from '../../domain/lineup.js'
 import { EVENT_TYPES } from '../../domain/match.js'
 import { TEAM_ROSTER } from '../../domain/players.js'
 import { TEAMS } from '../../domain/score.js'
-import { loadMatch } from '../../storage.js'
+import { loadMatch, saveRosterSettings } from '../../storage.js'
 import SetupView from '../SetupView.vue'
 
 /** Хранилище в памяти — та же поверхность, что у localStorage. */
@@ -143,5 +144,27 @@ describe('SetupView', () => {
     expect(wrapper.get('[data-field="opponent"]').element.value).toBe('Динамо')
     expect(wrapper.get('[data-field="serving-them"]').element.checked).toBe(true)
     expect(wrapper.get('[data-field="substitution-fivb"]').element.checked).toBe(true)
+  })
+
+  it('starts the match with the stored default six', async () => {
+    const storedSix = {
+      ...defaultLineup(TEAM_ROSTER),
+      zones: {
+        ...defaultLineup(TEAM_ROSTER).zones,
+        1: { playerId: 'fatkulin', role: ROLES.SETTER },
+      },
+    }
+    saveRosterSettings({ players: TEAM_ROSTER, defaultLineup: storedSix }, storage)
+
+    const { wrapper } = await mountView(storage)
+    await wrapper.get('[data-field="team-name"]').setValue('Наши')
+    await wrapper.get('[data-field="opponent"]').setValue('Динамо')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(loadMatch(storage).events[0].lineup.zones[1]).toEqual({
+      playerId: 'fatkulin',
+      role: ROLES.SETTER,
+    })
   })
 })

@@ -12,7 +12,7 @@ import { EVENT_TYPES } from '../../domain/match.js'
 import { TEAM_ROSTER } from '../../domain/players.js'
 import { TEAMS } from '../../domain/score.js'
 import { STAT_TYPES } from '../../domain/stats.js'
-import { loadMatch, saveMatch } from '../../storage.js'
+import { loadMatch, saveMatch, saveRosterSettings } from '../../storage.js'
 import SummaryView from '../SummaryView.vue'
 
 const LINEUP = defaultLineup(TEAM_ROSTER)
@@ -229,5 +229,16 @@ describe('SummaryView', () => {
 
     expect(router.currentRoute.value.name).toBe('lineup')
     expect(loadMatch(storage)).toBeNull()
+  })
+
+  it('uses the roster from storage in the totals', async () => {
+    const players = TEAM_ROSTER.map((player) =>
+      player.id === 'titov' ? { ...player, lastName: 'Титов-младший' } : player,
+    )
+    saveRosterSettings({ players, defaultLineup: LINEUP }, storage)
+
+    const { wrapper } = await mountView()
+
+    expect(wrapper.get('[data-total-player="titov"]').text()).toContain('Титов-младший')
   })
 })

@@ -8,8 +8,9 @@ import MatchCourt from '../components/MatchCourt.vue'
 import MatchPlayerMenu from '../components/MatchPlayerMenu.vue'
 import MatchScoreboard from '../components/MatchScoreboard.vue'
 import MatchSubstitutionDialog from '../components/MatchSubstitutionDialog.vue'
-import { TEAM_ROSTER, findPlayer } from '../domain/players.js'
+import { findPlayer } from '../domain/players.js'
 import { TEAMS, currentSet, isMatchOver, isSetOver, setWinner } from '../domain/score.js'
+import { useLineupStore } from '../stores/lineup.js'
 import { useMatchStore } from '../stores/match.js'
 
 const props = defineProps({
@@ -21,7 +22,11 @@ const router = useRouter()
 const matchStore = useMatchStore()
 matchStore.load(props.storage)
 
+const lineupStore = useLineupStore()
+lineupStore.load(props.storage)
+
 const { state, settings, canUndo, substitutionsLeft, substitutionMode } = storeToRefs(matchStore)
+const { roster } = storeToRefs(lineupStore)
 const confirmingReset = ref(false)
 const selectedPlayer = ref(null)
 const substitutionOpen = ref(false)
@@ -43,7 +48,7 @@ const setWinnerName = computed(() => {
 function openPlayer(playerId) {
   if (setOver.value) return
 
-  selectedPlayer.value = findPlayer(TEAM_ROSTER, playerId) ?? null
+  selectedPlayer.value = findPlayer(roster.value, playerId) ?? null
 }
 
 function recordStat(statType) {
@@ -60,6 +65,7 @@ function applySubstitution(request) {
 
 function resetMatch() {
   matchStore.reset()
+  lineupStore.reset()
   router.push({ name: 'lineup' })
 }
 </script>
@@ -105,7 +111,7 @@ function resetMatch() {
         </button>
       </div>
 
-      <MatchCourt :state="state" :roster="TEAM_ROSTER" :mode="courtMode" @select="openPlayer" />
+      <MatchCourt :state="state" :roster="roster" :mode="courtMode" @select="openPlayer" />
 
       <button
         v-if="!setOver"
@@ -147,7 +153,7 @@ function resetMatch() {
       <MatchSubstitutionDialog
         v-if="substitutionOpen"
         :state="state"
-        :roster="TEAM_ROSTER"
+        :roster="roster"
         :mode="substitutionMode"
         @substitute="applySubstitution"
         @close="substitutionOpen = false"

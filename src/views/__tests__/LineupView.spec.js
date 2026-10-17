@@ -67,6 +67,7 @@ function testRouter() {
     routes: [
       { path: '/', name: 'lineup', component: { template: '<div />' } },
       { path: '/setup', name: 'setup', component: { template: '<div />' } },
+      { path: '/roster', name: 'roster', component: { template: '<div />' } },
       { path: '/match', name: 'match', component: { template: '<div />' } },
     ],
   })
@@ -119,6 +120,18 @@ describe('LineupView', () => {
     const { wrapper } = await mountView()
 
     expect(wrapper.text()).toContain('Расстановка')
+  })
+
+  it('opens the roster settings before the match', async () => {
+    const { wrapper, router } = await mountView()
+
+    const button = wrapper.get('[data-action="edit-roster"]')
+    expect(button.text()).toContain('Настроить состав')
+
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('roster')
   })
 
   it('renders a single root element for the screen transition', async () => {
@@ -252,6 +265,15 @@ describe('LineupView', () => {
 })
 
 describe('LineupView between sets', () => {
+  it('hides the roster settings once the match has started', async () => {
+    const storage = fakeStorage()
+    saveWith(storage, [setStart(DEFAULT_LINEUP, TEAMS.US), ...points(TEAMS.US, 25)])
+
+    const { wrapper } = await mountView(TEAM_ROSTER, storage)
+
+    expect(wrapper.find('[data-action="edit-roster"]').exists()).toBe(false)
+  })
+
   it('starts the next set with the FIVB serving team', async () => {
     const storage = fakeStorage()
     saveWith(storage, [

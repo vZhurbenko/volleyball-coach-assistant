@@ -5,6 +5,7 @@ import { loadMatch } from '../storage.js'
 import { createGuards } from './guards.js'
 import LineupView from '../views/LineupView.vue'
 import SetupView from '../views/SetupView.vue'
+import RosterView from '../views/RosterView.vue'
 import MatchView from '../views/MatchView.vue'
 import SetResultView from '../views/SetResultView.vue'
 import SummaryView from '../views/SummaryView.vue'
@@ -49,6 +50,13 @@ export function createAppRouter({
         path: '/setup',
         name: 'setup',
         component: SetupView,
+        props: { storage },
+      },
+      {
+        path: '/roster',
+        name: 'roster',
+        component: RosterView,
+        beforeEnter: guards.requireNoMatch,
         props: { storage },
       },
       {

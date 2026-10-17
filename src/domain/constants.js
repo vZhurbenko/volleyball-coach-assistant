@@ -14,6 +14,14 @@ export const ROLES = {
   LIBERO: 'libero',
 }
 
+/** Роли, которые можно поставить в шестёрку: либеро выбирается отдельно. */
+export const COURT_ROLES = [
+  ROLES.MIDDLE_BLOCKER,
+  ROLES.OUTSIDE_HITTER,
+  ROLES.SETTER,
+  ROLES.OPPOSITE,
+]
+
 /** Подписи ролей для интерфейса. */
 export const ROLE_LABELS = {
   [ROLES.MIDDLE_BLOCKER]: 'ЦБ',

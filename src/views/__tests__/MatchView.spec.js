@@ -9,7 +9,7 @@ import { EVENT_TYPES, matchState } from '../../domain/match.js'
 import { TEAM_ROSTER } from '../../domain/players.js'
 import { TEAMS } from '../../domain/score.js'
 import { STAT_LABELS, STAT_TYPES, countersForPlayer } from '../../domain/stats.js'
-import { loadMatch, saveMatch } from '../../storage.js'
+import { loadMatch, saveMatch, saveRosterSettings } from '../../storage.js'
 import MatchView from '../MatchView.vue'
 
 const LINEUP = defaultLineup(TEAM_ROSTER)
@@ -478,5 +478,17 @@ describe('MatchView between sets', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('summary')
+  })
+
+  it('uses the roster from storage', async () => {
+    const players = TEAM_ROSTER.map((player) =>
+      player.id === 'titov' ? { ...player, lastName: 'Титов-младший' } : player,
+    )
+    saveRosterSettings({ players, defaultLineup: LINEUP }, storage)
+    saveWith([SET_START, ...points(TEAMS.US, 2)])
+
+    const { wrapper } = await mountView()
+
+    expect(wrapper.get('[data-player-id="titov"]').text()).toContain('Титов-младший')
   })
 })

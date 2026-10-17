@@ -101,6 +101,32 @@ describe('match guard', () => {
   })
 })
 
+describe('roster guard', () => {
+  it('allows editing the roster before the match', () => {
+    const { requireNoMatch } = createGuards(() => null)
+
+    expect(requireNoMatch()).toBe(true)
+  })
+
+  it('takes the coach to the match in progress', () => {
+    const { requireNoMatch } = createGuards(() => IN_PROGRESS)
+
+    expect(requireNoMatch()).toEqual({ name: 'match' })
+  })
+
+  it('takes the coach to the lineup between sets', () => {
+    const { requireNoMatch } = createGuards(() => BETWEEN_SETS)
+
+    expect(requireNoMatch()).toEqual({ name: 'lineup' })
+  })
+
+  it('takes the coach to the summary after the match', () => {
+    const { requireNoMatch } = createGuards(() => FINISHED)
+
+    expect(requireNoMatch()).toEqual({ name: 'summary' })
+  })
+})
+
 describe('summary guard', () => {
   it('blocks the summary until a match is started', () => {
     const { requireFinishedMatch } = createGuards(() => null)

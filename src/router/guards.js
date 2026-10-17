@@ -44,6 +44,12 @@ export function createGuards(readMatchState) {
       return true
     },
 
+    /** `/roster` — состав и стартовая шестёрка редактируются только до матча. */
+    requireNoMatch() {
+      const state = readMatchState()
+      return state ? { name: resumeScreen(state) } : true
+    },
+
     /** `/summary` — только для законченного матча. */
     requireFinishedMatch() {
       const state = readMatchState()

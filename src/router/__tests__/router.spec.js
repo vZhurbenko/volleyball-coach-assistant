@@ -62,6 +62,39 @@ describe('routes', () => {
     expect(router.resolve('/match').name).toBe('match')
     expect(router.resolve('/set-result').name).toBe('set-result')
     expect(router.resolve('/summary').name).toBe('summary')
+    expect(router.resolve('/roster').name).toBe('roster')
+  })
+})
+
+describe('roster route', () => {
+  it('opens before the match', async () => {
+    const router = await startAt('/roster')
+
+    expect(router.currentRoute.value.name).toBe('roster')
+  })
+
+  it('redirects to the match while the set is running', async () => {
+    saveSavedMatch([SET_START, POINT_US])
+
+    const router = await startAt('/roster')
+
+    expect(router.currentRoute.value.name).toBe('match')
+  })
+
+  it('redirects to the lineup between sets', async () => {
+    saveSavedMatch([SET_START, ...Array.from({ length: 25 }, () => POINT_US)])
+
+    const router = await startAt('/roster')
+
+    expect(router.currentRoute.value.name).toBe('lineup')
+  })
+
+  it('redirects to the summary after the match', async () => {
+    saveSavedMatch(finishedMatchEvents())
+
+    const router = await startAt('/roster')
+
+    expect(router.currentRoute.value.name).toBe('summary')
   })
 })
 
