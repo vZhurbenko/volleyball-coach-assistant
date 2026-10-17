@@ -103,6 +103,12 @@ describe('MatchCourt in game mode', () => {
     expect(wrapper.find('.court-half__attack-line').exists()).toBe(true)
   })
 
+  it('shows the protocol zone label above every circle in game mode', () => {
+    const wrapper = mountCourt([START_US], { mode: 'game' })
+
+    expect(wrapper.findAll('.court-half__zone')).toHaveLength(6)
+  })
+
   it('places the six by the reception coordinates', () => {
     const wrapper = mountCourt([START_US], { mode: 'game' })
 

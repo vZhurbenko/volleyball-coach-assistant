@@ -80,7 +80,7 @@ const cells = computed(() =>
       class="court-half__cell"
       :style="{ left: `${cell.x}%`, top: `${cell.y}%` }"
     >
-      <span v-if="mode === 'protocol'" class="court-half__zone">{{ cell.zone }}</span>
+      <span class="court-half__zone">{{ cell.zone }}</span>
 
       <button
         type="button"
@@ -148,7 +148,7 @@ const cells = computed(() =>
   position: absolute;
   bottom: calc(100% + 3px);
   left: 50%;
-  color: rgb(28 36 48 / 60%);
+  color: var(--color-text);
   font-size: 0.7rem;
   font-weight: 600;
   transform: translateX(-50%);
@@ -174,6 +174,22 @@ const cells = computed(() =>
 
 .court-half__player--libero {
   border-color: var(--color-primary);
+}
+
+/* Белый контур неразмытой тенью: текст читается, даже если выступает за кружок. */
+.court__number,
+.court__name,
+.court__role,
+.court-half__zone {
+  text-shadow:
+    -1px -1px 0 var(--color-surface),
+    1px -1px 0 var(--color-surface),
+    -1px 1px 0 var(--color-surface),
+    1px 1px 0 var(--color-surface),
+    -1px 0 0 var(--color-surface),
+    1px 0 0 var(--color-surface),
+    0 -1px 0 var(--color-surface),
+    0 1px 0 var(--color-surface);
 }
 
 .court__number {
