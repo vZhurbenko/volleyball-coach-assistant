@@ -54,6 +54,7 @@ export function createAppRouter({
         name: 'summary',
         component: SummaryView,
         beforeEnter: guards.requireFinishedMatch,
+        props: { storage },
       },
     ],
   })

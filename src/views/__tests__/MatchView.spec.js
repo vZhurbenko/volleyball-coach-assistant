@@ -51,6 +51,7 @@ function testRouter() {
     routes: [
       { path: '/', name: 'lineup', component: { template: '<div />' } },
       { path: '/match', name: 'match', component: { template: '<div />' } },
+      { path: '/summary', name: 'summary', component: { template: '<div />' } },
     ],
   })
 }
@@ -417,5 +418,18 @@ describe('MatchView between sets', () => {
     const { wrapper } = await mountView()
 
     expect(wrapper.find('[data-field="set-end"]').exists()).toBe(false)
+  })
+
+  it('offers the match summary after the match', async () => {
+    const set = [SET_START, ...points(TEAMS.US, 25)]
+    saveWith([...set, ...set, ...set])
+    const { wrapper, router } = await mountView()
+
+    expect(wrapper.get('[data-field="match-end"]').text()).toContain('Матч завершён')
+
+    await wrapper.get('[data-action="go-summary"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('summary')
   })
 })
