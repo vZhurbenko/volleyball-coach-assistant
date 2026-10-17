@@ -103,7 +103,7 @@ const streakText = computed(() =>
 
 /* Карточка — большая кнопка начисления очка. */
 .scoreboard__side {
-  --team-color: var(--color-primary);
+  --team-color: #3b82f6;
 
   display: flex;
   flex-direction: column;
@@ -113,7 +113,7 @@ const streakText = computed(() =>
   border: 0;
   border-radius: 14px;
   background: var(--color-surface);
-  color: #273449;
+  color: #334155;
   box-shadow: 0 2px 10px rgb(16 24 40 / 10%);
   transition:
     background-color 0.18s ease,
@@ -121,11 +121,11 @@ const streakText = computed(() =>
 }
 
 .scoreboard__side--us {
-  --team-color: #1d4ed8;
+  --team-color: #3b82f6;
 }
 
 .scoreboard__side--them {
-  --team-color: #b91c1c;
+  --team-color: #ef4444;
 }
 
 .scoreboard__side--serving {
@@ -146,7 +146,7 @@ const streakText = computed(() =>
 }
 
 .scoreboard__side:not(.scoreboard__side--serving) .scoreboard__points {
-  color: #273449;
+  color: #334155;
 }
 
 .scoreboard__team-bar {
@@ -157,7 +157,7 @@ const streakText = computed(() =>
   min-height: 38px;
   padding: 4px 10px;
   background: transparent;
-  color: var(--color-muted);
+  color: #334155;
   font-size: clamp(0.9rem, 3vw, 1.05rem);
   font-weight: 600;
   transition:
