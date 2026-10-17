@@ -4,7 +4,8 @@ import { ZONES } from '../constants.js'
 import { defaultLineup } from '../lineup.js'
 import { liberoZone } from '../libero.js'
 import { EVENT_TYPES, matchState, playersOnCourt } from '../match.js'
-import { MOCK_ROSTER, findPlayer } from '../players.js'
+import { findPlayer } from '../players.js'
+import { MOCK_ROSTER } from './fixtures/roster.js'
 import { TEAMS } from '../score.js'
 
 const RECEIVING = TEAMS.THEM

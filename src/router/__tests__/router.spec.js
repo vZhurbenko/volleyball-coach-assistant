@@ -3,12 +3,12 @@ import { createMemoryHistory } from 'vue-router'
 
 import { defaultLineup } from '../../domain/lineup.js'
 import { EVENT_TYPES } from '../../domain/match.js'
-import { MOCK_ROSTER } from '../../domain/players.js'
+import { TEAM_ROSTER } from '../../domain/players.js'
 import { TEAMS } from '../../domain/score.js'
 import { clearMatch, saveMatch } from '../../storage.js'
 import { createAppRouter } from '../index.js'
 
-const LINEUP = defaultLineup(MOCK_ROSTER)
+const LINEUP = defaultLineup(TEAM_ROSTER)
 
 const SET_START = { type: EVENT_TYPES.SET_START, lineup: LINEUP, serving: TEAMS.US }
 const POINT_US = { type: EVENT_TYPES.POINT, team: TEAMS.US }

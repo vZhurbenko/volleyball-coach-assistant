@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import { ZONES } from '../constants.js'
 import { emptyLineup, defaultLineup } from '../lineup.js'
-import { MOCK_ROSTER } from '../players.js'
+import { MOCK_ROSTER } from './fixtures/roster.js'
 import { TEAMS } from '../score.js'
 import { ROTATION, rotate, rotates } from '../rotation.js'
 

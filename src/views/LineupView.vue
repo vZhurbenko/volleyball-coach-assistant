@@ -7,19 +7,18 @@ import { useRouter } from 'vue-router'
 import LineupCourt from '../components/LineupCourt.vue'
 import LineupPlayerDialog from '../components/LineupPlayerDialog.vue'
 import { ROLES } from '../domain/constants.js'
-import { findPlayer, MOCK_ROSTER } from '../domain/players.js'
+import { findPlayer } from '../domain/players.js'
 import { useLineupStore } from '../stores/lineup.js'
 
-const roster = MOCK_ROSTER
 const lineupStore = useLineupStore()
-const { lineup, validation } = storeToRefs(lineupStore)
+const { roster, lineup, validation } = storeToRefs(lineupStore)
 const router = useRouter()
 
 const valid = computed(() => validation.value.valid)
 const violations = computed(() => validation.value.violations)
-const liberoPlayers = roster.filter((player) => player.role === ROLES.LIBERO)
+const liberoPlayers = computed(() => roster.value.filter((player) => player.role === ROLES.LIBERO))
 const liberoName = computed(() => {
-  const player = findPlayer(roster, lineup.value.liberoId)
+  const player = findPlayer(roster.value, lineup.value.liberoId)
   return player ? `${player.firstName} ${player.lastName}` : null
 })
 
@@ -71,7 +70,13 @@ function goNext() {
       </p>
     </div>
 
-    <button type="button" class="button-block" :disabled="!valid" data-action="next" @click="goNext">
+    <button
+      type="button"
+      class="button-block"
+      :disabled="!valid"
+      data-action="next"
+      @click="goNext"
+    >
       Далее
     </button>
   </section>

@@ -5,7 +5,19 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ROLES } from '../../domain/constants.js'
+import { TEAM_ROSTER } from '../../domain/players.js'
+import { useLineupStore } from '../../stores/lineup.js'
 import LineupView from '../LineupView.vue'
+
+const LIBERO = {
+  id: 'test-libero',
+  firstName: 'Илья',
+  lastName: 'Тестов',
+  number: 99,
+  role: ROLES.LIBERO,
+}
+
+const ROSTER_WITH_LIBERO = [...TEAM_ROSTER, LIBERO]
 
 function testRouter() {
   return createRouter({
@@ -18,9 +30,11 @@ function testRouter() {
 }
 
 /** Монтирует экран с чистым store и роутером — как в приложении. */
-async function mountView() {
+async function mountView(roster = TEAM_ROSTER) {
   const pinia = createPinia()
   setActivePinia(pinia)
+  useLineupStore().init(roster)
+
   const router = testRouter()
   await router.push('/')
   await router.isReady()
@@ -61,35 +75,34 @@ describe('LineupView', () => {
     expect(wrapper.text()).toContain('Расстановка')
   })
 
-  it('prefills the default starting six', async () => {
+  it('prefills the starting six from the team roster', async () => {
     const { wrapper } = await mountView()
 
-    expect(wrapper.get('[data-zone="1"]').text()).toContain('Белов')
-    expect(wrapper.get('[data-zone="3"]').text()).toContain('Морозов')
-    expect(wrapper.get('[data-zone="4"]').text()).toContain('Ефимов')
+    expect(wrapper.get('[data-zone="1"]').text()).toContain('Титов')
+    expect(wrapper.get('[data-zone="3"]').text()).toContain('Громов')
+    expect(wrapper.get('[data-zone="4"]').text()).toContain('Панчишкина')
     expect(wrapper.text()).not.toContain('Назначить')
   })
 
   it('assigns a player to a zone', async () => {
     const { wrapper } = await mountView()
 
-    await assign(wrapper, 4, 'krylov', ROLES.SETTER)
+    await assign(wrapper, 4, 'fatkulin', ROLES.SETTER)
 
     const zone = wrapper.get('[data-zone="4"]')
-    expect(zone.text()).toContain('Крылов')
-    expect(zone.text()).toContain('11')
+    expect(zone.text()).toContain('Фаткулин')
     expect(zone.text()).toContain('Связка')
-    expect(zone.text()).not.toContain('Ефимов')
+    expect(zone.text()).not.toContain('Панчишкина')
   })
 
   it('lets the coach override the role on assignment', async () => {
     const { wrapper } = await mountView()
 
-    // Ефимов по составу диагональный, но назначаем его связкой.
-    await assign(wrapper, 4, 'efimov', ROLES.SETTER)
+    // Горобченко по составу диагональный, но назначаем его связкой.
+    await assign(wrapper, 1, 'gorobchenko', ROLES.SETTER)
 
-    const zone = wrapper.get('[data-zone="4"]')
-    expect(zone.text()).toContain('Ефимов')
+    const zone = wrapper.get('[data-zone="1"]')
+    expect(zone.text()).toContain('Горобченко')
     expect(zone.text()).toContain('Связка')
     expect(zone.text()).not.toContain('Диагональный')
   })
@@ -97,11 +110,11 @@ describe('LineupView', () => {
   it('replaces the player when a filled zone is assigned again', async () => {
     const { wrapper } = await mountView()
 
-    await assign(wrapper, 4, 'savelev', ROLES.OPPOSITE)
+    await assign(wrapper, 1, 'gorobchenko', ROLES.OPPOSITE)
 
-    const zone = wrapper.get('[data-zone="4"]')
-    expect(zone.text()).toContain('Савельев')
-    expect(zone.text()).not.toContain('Ефимов')
+    const zone = wrapper.get('[data-zone="1"]')
+    expect(zone.text()).toContain('Горобченко')
+    expect(zone.text()).not.toContain('Титов')
   })
 
   it('closes the dialog without changing the zone on cancel', async () => {
@@ -111,18 +124,16 @@ describe('LineupView', () => {
     await wrapper.get('[data-action="cancel"]').trigger('click')
 
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-    expect(wrapper.get('[data-zone="2"]').text()).toContain('Соколов')
+    expect(wrapper.get('[data-zone="2"]').text()).toContain('Верженовский')
   })
 
   it('blocks the next step and explains an invalid lineup', async () => {
     const { wrapper, router } = await mountView()
 
-    // Белов становится третьим центральным блокирующим.
-    await assign(wrapper, 1, 'belov', ROLES.MIDDLE_BLOCKER)
+    // Титов становится третьим центральным блокирующим.
+    await assign(wrapper, 1, 'titov', ROLES.MIDDLE_BLOCKER)
 
-    expect(wrapper.get('[role="alert"]').text()).toContain(
-      'больше двух центральных блокирующих',
-    )
+    expect(wrapper.get('[role="alert"]').text()).toContain('больше двух центральных блокирующих')
     const next = wrapper.get('[data-action="next"]')
     expect(next.attributes('disabled')).toBeDefined()
 
@@ -142,26 +153,30 @@ describe('LineupView', () => {
     expect(router.currentRoute.value.name).toBe('setup')
   })
 
-  it('offers only libero players as libero', async () => {
+  it('offers no libero when the team has none', async () => {
     const { wrapper } = await mountView()
 
     const options = wrapper.get('[data-field="libero"]').findAll('option')
 
-    expect(options).toHaveLength(2)
-    expect(options.map((option) => option.text())).toEqual([
-      'Без либеро',
-      '1 · Кирилл Зимин',
-    ])
+    expect(options.map((option) => option.text())).toEqual(['Без либеро'])
+  })
+
+  it('offers only libero players as libero', async () => {
+    const { wrapper } = await mountView(ROSTER_WITH_LIBERO)
+
+    const options = wrapper.get('[data-field="libero"]').findAll('option')
+
+    expect(options.map((option) => option.text())).toEqual(['Без либеро', '99 · Илья Тестов'])
   })
 
   it('selects and removes the libero', async () => {
-    const { wrapper } = await mountView()
+    const { wrapper } = await mountView(ROSTER_WITH_LIBERO)
     const select = wrapper.get('[data-field="libero"]')
 
     expect(wrapper.text()).toContain('Либеро не выбран')
 
-    await select.setValue('zimin')
-    expect(wrapper.text()).toContain('Либеро: Кирилл Зимин')
+    await select.setValue('test-libero')
+    expect(wrapper.text()).toContain('Либеро: Илья Тестов')
 
     await select.setValue('')
     expect(wrapper.text()).toContain('Либеро не выбран')

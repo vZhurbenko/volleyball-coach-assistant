@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 
 import MatchCourt from '../components/MatchCourt.vue'
 import MatchScoreboard from '../components/MatchScoreboard.vue'
-import { MOCK_ROSTER } from '../domain/players.js'
+import { TEAM_ROSTER } from '../domain/players.js'
 import { useMatchStore } from '../stores/match.js'
 
 const props = defineProps({
@@ -38,7 +38,7 @@ function resetMatch() {
         @point="matchStore.addPoint"
       />
 
-      <MatchCourt :state="state" :roster="MOCK_ROSTER" />
+      <MatchCourt :state="state" :roster="TEAM_ROSTER" />
 
       <div class="match-actions">
         <button

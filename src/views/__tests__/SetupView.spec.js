@@ -6,7 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { defaultLineup } from '../../domain/lineup.js'
 import { EVENT_TYPES } from '../../domain/match.js'
-import { MOCK_ROSTER } from '../../domain/players.js'
+import { TEAM_ROSTER } from '../../domain/players.js'
 import { TEAMS } from '../../domain/score.js'
 import { loadMatch } from '../../storage.js'
 import SetupView from '../SetupView.vue'
@@ -93,12 +93,12 @@ describe('SetupView', () => {
     const saved = loadMatch(storage)
     expect(saved.settings.opponent).toBe('Динамо')
     expect(saved.settings.serving).toBe(TEAMS.THEM)
-    expect(saved.settings.lineup).toEqual(defaultLineup(MOCK_ROSTER))
+    expect(saved.settings.lineup).toEqual(defaultLineup(TEAM_ROSTER))
 
     expect(saved.events).toHaveLength(1)
     expect(saved.events[0]).toEqual({
       type: EVENT_TYPES.SET_START,
-      lineup: defaultLineup(MOCK_ROSTER),
+      lineup: defaultLineup(TEAM_ROSTER),
       serving: TEAMS.THEM,
     })
   })

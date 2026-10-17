@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import { defaultLineup } from '../domain/lineup.js'
 import { EVENT_TYPES, matchState } from '../domain/match.js'
-import { MOCK_ROSTER } from '../domain/players.js'
+import { TEAM_ROSTER } from '../domain/players.js'
 import { TEAMS } from '../domain/score.js'
 import { STORAGE_KEY, clearMatch, loadMatch, saveMatch } from '../storage.js'
 
@@ -31,7 +31,7 @@ function brokenStorage() {
   }
 }
 
-const SIX = defaultLineup(MOCK_ROSTER)
+const SIX = defaultLineup(TEAM_ROSTER)
 
 const MATCH = {
   events: [{ type: EVENT_TYPES.SET_START, lineup: SIX, serving: TEAMS.US }],
