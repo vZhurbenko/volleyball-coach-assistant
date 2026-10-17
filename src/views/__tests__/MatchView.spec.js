@@ -79,6 +79,14 @@ describe('MatchView scoreboard', () => {
     expect(textOf(wrapper, 'streaks')).toContain('Динамо +1')
   })
 
+  it('shows the protocol court under the scoreboard', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    expect(wrapper.findAll('[data-zone]')).toHaveLength(6)
+    expect(wrapper.get('[data-zone="1"]').attributes('data-player-id')).toBe('belov')
+  })
+
   it('adds a point to the tapped side and saves it', async () => {
     saveWith([SET_START])
     const { wrapper } = await mountView()
