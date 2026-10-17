@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { ROLES, ZONES } from '../constants.js'
 import { findPlayer } from '../players.js'
 import { MOCK_ROSTER } from './fixtures/roster.js'
-import { defaultLineup, emptyLineup, availablePlayersForZone, validateLineup } from '../lineup.js'
+import { defaultLineup, emptyLineup, availablePlayersForZone, cloneLineup, validateLineup } from '../lineup.js'
 
 /** Карта пустых зон: { 1: null, …, 6: null }. */
 function emptyZones() {
@@ -87,8 +87,21 @@ describe('availablePlayersForZone', () => {
     expect(available.map((player) => player.id)).toContain('efimov')
   })
 
-  it('returns the whole roster for an empty lineup', () => {
-    expect(availablePlayersForZone(emptyLineup(), MOCK_ROSTER, 3)).toEqual(MOCK_ROSTER)
+  it('returns every court player for an empty lineup', () => {
+    const courtPlayers = MOCK_ROSTER.filter((player) => player.role !== ROLES.LIBERO)
+
+    expect(availablePlayersForZone(emptyLineup(), MOCK_ROSTER, 3)).toEqual(courtPlayers)
+  })
+})
+
+describe('cloneLineup', () => {
+  it('copies the zones and the libero slot without sharing references', () => {
+    const lineup = lineupFrom(VALID_SIX, 'zimin')
+    const copy = cloneLineup(lineup)
+
+    expect(copy).toEqual(lineup)
+    copy.zones[1].role = ROLES.OPPOSITE
+    expect(lineup.zones[1].role).toBe(ROLES.SETTER)
   })
 })
 

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
-import { ROLE_LABELS, ROLES } from '../domain/constants.js'
+import { COURT_ROLES, ROLE_LABELS } from '../domain/constants.js'
 
 defineProps({
   zone: { type: Number, required: true },
@@ -9,9 +9,6 @@ defineProps({
 })
 
 const emit = defineEmits(['assign', 'cancel'])
-
-/** Роли, которые можно назначить в шестёрку: либеро выбирается отдельно. */
-const COURT_ROLES = [ROLES.MIDDLE_BLOCKER, ROLES.OUTSIDE_HITTER, ROLES.SETTER, ROLES.OPPOSITE]
 
 const selected = ref(null)
 

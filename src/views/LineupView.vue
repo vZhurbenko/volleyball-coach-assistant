@@ -19,6 +19,7 @@ const props = defineProps({
 })
 
 const lineupStore = useLineupStore()
+lineupStore.load(props.storage)
 const { roster, lineup, validation } = storeToRefs(lineupStore)
 
 const matchStore = useMatchStore()
@@ -91,7 +92,18 @@ function startNextSet() {
 
 <template>
   <section class="screen">
-    <h1>Расстановка</h1>
+    <div class="screen__head">
+      <h1>Расстановка</h1>
+      <button
+        v-if="!state"
+        type="button"
+        class="button-secondary"
+        data-action="edit-roster"
+        @click="router.push({ name: 'roster' })"
+      >
+        Настроить состав
+      </button>
+    </div>
     <p>Нажмите на зону и выберите игрока. Роль можно переопределить при назначении.</p>
 
     <LineupCourt :lineup="lineup" :roster="roster" @select="pickingZone = $event" />
@@ -189,18 +201,16 @@ function startNextSet() {
 </template>
 
 <style scoped>
-.violations {
+.screen__head {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.screen__head h1 {
   margin: 0;
-  padding: 12px 14px 12px 30px;
-  border: 1px solid #efc9c5;
-  border-left: 3px solid var(--danger);
-  border-radius: 10px;
-  background: var(--danger-bg);
-  color: var(--danger);
-  font-size: 0.9rem;
 }
 
 .set-break {

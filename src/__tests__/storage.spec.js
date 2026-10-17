@@ -1,10 +1,18 @@
 import { describe, it, expect } from 'vitest'
 
-import { defaultLineup } from '../domain/lineup.js'
+import { defaultLineup, emptyLineup } from '../domain/lineup.js'
 import { EVENT_TYPES, matchState } from '../domain/match.js'
 import { TEAM_ROSTER } from '../domain/players.js'
 import { TEAMS } from '../domain/score.js'
-import { STORAGE_KEY, clearMatch, loadMatch, saveMatch } from '../storage.js'
+import {
+  ROSTER_STORAGE_KEY,
+  STORAGE_KEY,
+  clearMatch,
+  loadMatch,
+  loadRosterSettings,
+  saveMatch,
+  saveRosterSettings,
+} from '../storage.js'
 
 /** Хранилище в памяти — та же поверхность, что у localStorage. */
 function fakeStorage(initial = {}) {
@@ -140,5 +148,79 @@ describe('restoring a match', () => {
     clearMatch(storage)
 
     expect(matchState(loadMatch(storage)?.events ?? [])).toBeNull()
+  })
+})
+
+const ROSTER_SETTINGS = { players: TEAM_ROSTER, defaultLineup: SIX }
+
+describe('saveRosterSettings', () => {
+  it('saves and restores the roster and the default six', () => {
+    const storage = fakeStorage()
+    saveRosterSettings(ROSTER_SETTINGS, storage)
+
+    expect(loadRosterSettings(storage)).toEqual(ROSTER_SETTINGS)
+  })
+
+  it('overwrites the previous roster', () => {
+    const storage = fakeStorage()
+    saveRosterSettings(ROSTER_SETTINGS, storage)
+    saveRosterSettings({ players: [], defaultLineup: emptyLineup() }, storage)
+
+    expect(loadRosterSettings(storage).players).toEqual([])
+  })
+
+  it('writes under a versioned key', () => {
+    const storage = fakeStorage()
+    saveRosterSettings(ROSTER_SETTINGS, storage)
+
+    expect(ROSTER_STORAGE_KEY).toBe('volleyball-coach-assistant:roster:v1')
+    expect(storage.getItem(ROSTER_STORAGE_KEY)).not.toBeNull()
+  })
+
+  it('refuses to save into a broken storage', () => {
+    expect(saveRosterSettings(ROSTER_SETTINGS, brokenStorage())).toBe(false)
+  })
+})
+
+describe('loadRosterSettings', () => {
+  it('accepts an empty roster', () => {
+    const storage = fakeStorage({
+      [ROSTER_STORAGE_KEY]: JSON.stringify({ players: [], defaultLineup: emptyLineup() }),
+    })
+
+    expect(loadRosterSettings(storage)).toEqual({ players: [], defaultLineup: emptyLineup() })
+  })
+
+  it('returns a null default six when that part is missing', () => {
+    const storage = fakeStorage({ [ROSTER_STORAGE_KEY]: JSON.stringify({ players: TEAM_ROSTER }) })
+
+    expect(loadRosterSettings(storage)).toEqual({ players: TEAM_ROSTER, defaultLineup: null })
+  })
+
+  it.each([
+    ['broken JSON', '{не json'],
+    ['a non-object', '"строка"'],
+    ['a missing roster', '{}'],
+    ['a malformed player', '{"players":[{"id":"x"}]}'],
+    [
+      'duplicate ids',
+      '{"players":[{"id":"same","firstName":"А","lastName":"Б","number":1,"role":"setter"},{"id":"same","firstName":"В","lastName":"Г","number":2,"role":"setter"}]}',
+    ],
+  ])('starts clean on %s', (_name, raw) => {
+    const storage = fakeStorage({ [ROSTER_STORAGE_KEY]: raw })
+
+    expect(loadRosterSettings(storage)).toBeNull()
+  })
+
+  it('ignores the previous version of the record', () => {
+    const storage = fakeStorage({
+      'volleyball-coach-assistant:roster:v0': JSON.stringify(ROSTER_SETTINGS),
+    })
+
+    expect(loadRosterSettings(storage)).toBeNull()
+  })
+
+  it('starts clean when the storage refuses to read', () => {
+    expect(loadRosterSettings(brokenStorage())).toBeNull()
   })
 })

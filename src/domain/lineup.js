@@ -48,9 +48,22 @@ export function defaultLineup(roster) {
   return { zones, liberoId: null }
 }
 
+/** Копия шестёрки: зоны и назначения независимы от исходной. */
+export function cloneLineup(lineup) {
+  return {
+    zones: Object.fromEntries(
+      ZONES.map((zone) => {
+        const assignment = lineup?.zones?.[zone] ?? null
+        return [zone, assignment ? { ...assignment } : null]
+      }),
+    ),
+    liberoId: lineup?.liberoId ?? null,
+  }
+}
+
 /**
- * Игроки, которых можно предложить для зоны: все, кроме уже занятых в других
- * зонах. Игрок из этой же зоны остаётся в списке — ему можно сменить роль.
+ * Игроки, которых можно предложить для зоны: все, кроме либеро и уже занятых
+ * в других зонах. Игрок из этой же зоны остаётся в списке — ему можно сменить роль.
  *
  * @param {Lineup} lineup
  * @param {import('./players.js').Player[]} roster
@@ -64,7 +77,9 @@ export function availablePlayersForZone(lineup, roster, zone) {
       .filter(Boolean),
   )
 
-  return roster.filter((player) => !taken.has(player.id))
+  return roster.filter(
+    (player) => player.role !== ROLES.LIBERO && !taken.has(player.id),
+  )
 }
 
 /**

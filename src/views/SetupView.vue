@@ -17,6 +17,7 @@ const props = defineProps({
 
 const router = useRouter()
 const lineupStore = useLineupStore()
+lineupStore.load(props.storage)
 const { lineup } = storeToRefs(lineupStore)
 
 const saved = loadMatch(props.storage)

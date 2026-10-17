@@ -125,6 +125,21 @@ p {
   padding: 16px;
 }
 
+/* Нарушения состава: один и тот же блок на расстановке и в настройках. */
+.violations {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 12px 14px 12px 30px;
+  border: 1px solid #efc9c5;
+  border-left: 3px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
 /* Переход между экранами: короткий fade со сдвигом. */
 .screen-enter-active,
 .screen-leave-active {

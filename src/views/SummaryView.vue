@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 
 import SetPointLog from '../components/SetPointLog.vue'
-import { TEAM_ROSTER, findPlayer } from '../domain/players.js'
+import { findPlayer } from '../domain/players.js'
 import { TEAMS, setWinner, setsWon } from '../domain/score.js'
 import { STAT_LABELS, STAT_TYPES, countersForPlayer, countersForSet } from '../domain/stats.js'
 import { useLineupStore } from '../stores/lineup.js'
@@ -20,8 +20,10 @@ const router = useRouter()
 const matchStore = useMatchStore()
 matchStore.load(props.storage)
 const lineupStore = useLineupStore()
+lineupStore.load(props.storage)
 
 const { state, settings } = storeToRefs(matchStore)
+const { roster } = storeToRefs(lineupStore)
 
 const STAT_TYPE_LIST = Object.values(STAT_TYPES)
 
@@ -32,7 +34,7 @@ const won = computed(() => (state.value ? setsWon(state.value.score) : { us: 0, 
 const stats = computed(() => state.value?.stats ?? { sets: [] })
 
 function counterRows(countersByPlayer) {
-  return TEAM_ROSTER.filter((player) => countersByPlayer[player.id]).map((player) => ({
+  return roster.value.filter((player) => countersByPlayer[player.id]).map((player) => ({
     player,
     counters: countersByPlayer[player.id],
   }))
@@ -46,7 +48,7 @@ const setSections = computed(() =>
 )
 
 const totalRows = computed(() =>
-  TEAM_ROSTER.map((player) => ({
+  roster.value.map((player) => ({
     player,
     counters: countersForPlayer(stats.value, player.id),
   })),
@@ -54,14 +56,14 @@ const totalRows = computed(() =>
 
 const retiredPlayers = computed(() =>
   (state.value?.substitutions.retired ?? [])
-    .map((playerId) => findPlayer(TEAM_ROSTER, playerId))
+    .map((playerId) => findPlayer(roster.value, playerId))
     .filter(Boolean),
 )
 
 const exceptionalSubstitutions = computed(() =>
   (state.value?.substitutions.exceptional ?? []).map(({ outgoingId, incomingId }) => ({
-    outgoing: findPlayer(TEAM_ROSTER, outgoingId),
-    incoming: findPlayer(TEAM_ROSTER, incomingId),
+    outgoing: findPlayer(roster.value, outgoingId),
+    incoming: findPlayer(roster.value, incomingId),
   })),
 )
 
