@@ -39,6 +39,7 @@ export function createAppRouter({
         path: '/setup',
         name: 'setup',
         component: SetupView,
+        props: { storage },
       },
       {
         path: '/match',
