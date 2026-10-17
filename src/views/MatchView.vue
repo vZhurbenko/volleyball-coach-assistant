@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
@@ -9,6 +9,7 @@ import MatchPlayerMenu from '../components/MatchPlayerMenu.vue'
 import MatchScoreboard from '../components/MatchScoreboard.vue'
 import MatchSubstitutionDialog from '../components/MatchSubstitutionDialog.vue'
 import { TEAM_ROSTER, findPlayer } from '../domain/players.js'
+import { TEAMS, currentSet, isMatchOver, isSetOver, setWinner } from '../domain/score.js'
 import { useMatchStore } from '../stores/match.js'
 
 const props = defineProps({
@@ -26,7 +27,22 @@ const selectedPlayer = ref(null)
 const substitutionOpen = ref(false)
 const courtMode = ref('protocol')
 
+const currentSetScore = computed(() => (state.value ? currentSet(state.value.score) : null))
+const setOver = computed(() => (state.value ? isSetOver(currentSet(state.value.score)) : false))
+const matchOver = computed(() => (state.value ? isMatchOver(state.value.score) : false))
+const betweenSets = computed(() => setOver.value && !matchOver.value)
+const setWinnerName = computed(() => {
+  if (!state.value) return ''
+
+  const winner = setWinner(currentSet(state.value.score))
+  return winner === TEAMS.US
+    ? settings.value.teamName || 'Мы'
+    : settings.value.opponent || 'Соперник'
+})
+
 function openPlayer(playerId) {
+  if (setOver.value) return
+
   selectedPlayer.value = findPlayer(TEAM_ROSTER, playerId) ?? null
 }
 
@@ -60,6 +76,18 @@ function resetMatch() {
         @point="matchStore.addPoint"
       />
 
+      <div v-if="betweenSets" class="set-end" data-field="set-end">
+        <h2>Партия {{ state.setNumber }} завершена</h2>
+        <p>
+          Победитель: {{ setWinnerName }} · {{ currentSetScore.points.us }}:{{
+            currentSetScore.points.them
+          }}
+        </p>
+        <button type="button" data-action="next-set" @click="router.push({ name: 'lineup' })">
+          Дальше
+        </button>
+      </div>
+
       <div class="court-switch" role="group" aria-label="Режим площадки">
         <button
           type="button"
@@ -86,6 +114,7 @@ function resetMatch() {
       <MatchCourt :state="state" :roster="TEAM_ROSTER" :mode="courtMode" @select="openPlayer" />
 
       <button
+        v-if="!setOver"
         type="button"
         class="button-block"
         data-action="open-substitution"
@@ -149,6 +178,23 @@ function resetMatch() {
 </template>
 
 <style scoped>
+.set-end {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: #eef3fb;
+}
+
+.set-end h2 {
+  font-size: 1.1rem;
+}
+
+.set-end p {
+  color: var(--color-muted);
+}
+
 .court-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

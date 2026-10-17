@@ -30,6 +30,10 @@ export const useMatchStore = defineStore('match', () => {
   const substitutionMode = computed(
     () => settings.value.substitutionMode ?? SUBSTITUTION_MODES.FIVB,
   )
+  const currentSetServing = computed(() => {
+    const setStart = events.value.findLast((event) => event.type === EVENT_TYPES.SET_START)
+    return setStart?.serving ?? null
+  })
   const canScore = computed(() => {
     if (!state.value) return false
 
@@ -93,6 +97,22 @@ export const useMatchStore = defineStore('match', () => {
     return result
   }
 
+  /**
+   * Открывает следующую партию. Вызывается с экрана расстановки между партиями.
+   *
+   * @param {{ lineup: object, serving: 'us' | 'them' }} request
+   */
+  function startNextSet({ lineup, serving }) {
+    if (!state.value) return { ok: false }
+    if (isMatchOver(state.value.score) || !isSetOver(currentSet(state.value.score))) {
+      return { ok: false }
+    }
+
+    events.value = [...events.value, { type: EVENT_TYPES.SET_START, lineup, serving }]
+    persist()
+    return { ok: true }
+  }
+
   function undo() {
     const next = undoLastPoint(events.value)
     if (next === events.value) return
@@ -118,10 +138,12 @@ export const useMatchStore = defineStore('match', () => {
     canUndo,
     substitutionsLeft,
     substitutionMode,
+    currentSetServing,
     load,
     addPoint,
     addStat,
     addSubstitution,
+    startNextSet,
     undo,
     reset,
   }

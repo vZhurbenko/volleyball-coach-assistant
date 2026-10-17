@@ -42,9 +42,21 @@ export const useLineupStore = defineStore('lineup', () => {
     lineup.value = { ...lineup.value, liberoId }
   }
 
+  /**
+   * Ставит готовую шестёрку — например, из прошлой партии перед следующей.
+   *
+   * @param {import('../domain/lineup.js').Lineup} nextLineup
+   */
+  function setLineup(nextLineup) {
+    lineup.value = {
+      zones: { ...nextLineup.zones },
+      liberoId: nextLineup.liberoId ?? null,
+    }
+  }
+
   function reset() {
     lineup.value = defaultLineup(roster.value)
   }
 
-  return { roster, lineup, validation, init, assign, setLibero, reset }
+  return { roster, lineup, validation, init, assign, setLibero, setLineup, reset }
 })

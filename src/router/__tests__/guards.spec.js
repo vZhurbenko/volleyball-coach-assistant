@@ -9,6 +9,8 @@ function stateWithSets(sets) {
 
 const IN_PROGRESS = stateWithSets([{ number: 1, points: { us: 3, them: 2 } }])
 
+const BETWEEN_SETS = stateWithSets([{ number: 1, points: { us: 25, them: 10 } }])
+
 const FINISHED = stateWithSets([
   { number: 1, points: { us: 25, them: 10 } },
   { number: 2, points: { us: 25, them: 10 } },
@@ -22,6 +24,10 @@ describe('resumeScreen', () => {
 
   it('returns to the match while it is in progress', () => {
     expect(resumeScreen(IN_PROGRESS)).toBe('match')
+  })
+
+  it('returns to the lineup between sets', () => {
+    expect(resumeScreen(BETWEEN_SETS)).toBe('lineup')
   })
 
   it('returns to the summary once the match is over', () => {
@@ -40,6 +46,12 @@ describe('resume guard', () => {
     const { resume } = createGuards(() => IN_PROGRESS)
 
     expect(resume({ name: 'lineup' })).toEqual({ name: 'match' })
+  })
+
+  it('keeps the coach on the lineup between sets', () => {
+    const { resume } = createGuards(() => BETWEEN_SETS)
+
+    expect(resume({ name: 'lineup' })).toBe(true)
   })
 
   it('takes the coach to the summary of a finished match', () => {
@@ -72,6 +84,12 @@ describe('summary guard', () => {
 
   it('keeps the coach on the match until it is over', () => {
     const { requireFinishedMatch } = createGuards(() => IN_PROGRESS)
+
+    expect(requireFinishedMatch()).toEqual({ name: 'match' })
+  })
+
+  it('keeps the coach on the match between sets', () => {
+    const { requireFinishedMatch } = createGuards(() => BETWEEN_SETS)
 
     expect(requireFinishedMatch()).toEqual({ name: 'match' })
   })
