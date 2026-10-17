@@ -5,9 +5,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { defaultLineup } from '../../domain/lineup.js'
-import { EVENT_TYPES } from '../../domain/match.js'
+import { EVENT_TYPES, matchState } from '../../domain/match.js'
 import { TEAM_ROSTER } from '../../domain/players.js'
 import { TEAMS } from '../../domain/score.js'
+import { STAT_LABELS, STAT_TYPES, countersForPlayer } from '../../domain/stats.js'
 import { loadMatch, saveMatch } from '../../storage.js'
 import MatchView from '../MatchView.vue'
 
@@ -168,5 +169,72 @@ describe('MatchView scoreboard', () => {
 
     expect(router.currentRoute.value.name).toBe('lineup')
     expect(loadMatch(storage)).toBeNull()
+  })
+})
+
+describe('MatchView player stats menu', () => {
+  async function openMenu(wrapper, zone = 1) {
+    await wrapper.get(`[data-zone="${zone}"]`).trigger('click')
+  }
+
+  it('shows the five facts for the tapped player', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    await openMenu(wrapper)
+
+    const dialog = wrapper.get('[role="dialog"]')
+    expect(dialog.text()).toContain('Титов')
+    for (const label of Object.values(STAT_LABELS)) {
+      expect(dialog.text()).toContain(label)
+    }
+  })
+
+  it('writes every stat button to the journal and closes the menu', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    for (const statType of Object.values(STAT_TYPES)) {
+      await openMenu(wrapper)
+      await wrapper.get(`[data-stat="${statType}"]`).trigger('click')
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    }
+
+    const saved = loadMatch(storage)
+    const stats = saved.events.filter((event) => event.type === EVENT_TYPES.STAT)
+    expect(stats.map((event) => event.statType)).toEqual(Object.values(STAT_TYPES))
+    expect(stats.every((event) => event.playerId === 'titov')).toBe(true)
+
+    const counters = countersForPlayer(matchState(saved.events).stats, 'titov')
+    for (const statType of Object.values(STAT_TYPES)) {
+      expect(counters[statType]).toBe(1)
+    }
+  })
+
+  it('counts repeated presses', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    await openMenu(wrapper)
+    await wrapper.get(`[data-stat="${STAT_TYPES.SERVE}"]`).trigger('click')
+    await openMenu(wrapper)
+    await wrapper.get(`[data-stat="${STAT_TYPES.SERVE}"]`).trigger('click')
+
+    const counters = countersForPlayer(
+      matchState(loadMatch(storage).events).stats,
+      'titov',
+    )
+    expect(counters.serve).toBe(2)
+  })
+
+  it('closes without writing after cancel', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    await openMenu(wrapper)
+    await wrapper.get('[data-action="close-menu"]').trigger('click')
+
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(loadMatch(storage).events).toHaveLength(1)
   })
 })

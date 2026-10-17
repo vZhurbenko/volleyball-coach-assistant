@@ -46,6 +46,17 @@ export const useMatchStore = defineStore('match', () => {
     persist()
   }
 
+  /**
+   * @param {string} playerId
+   * @param {string} statType — один из `STAT_TYPES`
+   */
+  function addStat(playerId, statType) {
+    if (!state.value) return
+
+    events.value = [...events.value, { type: EVENT_TYPES.STAT, playerId, statType }]
+    persist()
+  }
+
   function undo() {
     const next = undoLastPoint(events.value)
     if (next === events.value) return
@@ -64,5 +75,5 @@ export const useMatchStore = defineStore('match', () => {
     saveMatch({ events: events.value, settings: settings.value }, storage)
   }
 
-  return { events, settings, state, canUndo, load, addPoint, undo, reset }
+  return { events, settings, state, canUndo, load, addPoint, addStat, undo, reset }
 })

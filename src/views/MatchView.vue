@@ -5,8 +5,9 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 
 import MatchCourt from '../components/MatchCourt.vue'
+import MatchPlayerMenu from '../components/MatchPlayerMenu.vue'
 import MatchScoreboard from '../components/MatchScoreboard.vue'
-import { TEAM_ROSTER } from '../domain/players.js'
+import { TEAM_ROSTER, findPlayer } from '../domain/players.js'
 import { useMatchStore } from '../stores/match.js'
 
 const props = defineProps({
@@ -20,6 +21,18 @@ matchStore.load(props.storage)
 
 const { state, settings, canUndo } = storeToRefs(matchStore)
 const confirmingReset = ref(false)
+const selectedPlayer = ref(null)
+
+function openPlayer(playerId) {
+  selectedPlayer.value = findPlayer(TEAM_ROSTER, playerId) ?? null
+}
+
+function recordStat(statType) {
+  if (!selectedPlayer.value) return
+
+  matchStore.addStat(selectedPlayer.value.id, statType)
+  selectedPlayer.value = null
+}
 
 function resetMatch() {
   matchStore.reset()
@@ -38,7 +51,7 @@ function resetMatch() {
         @point="matchStore.addPoint"
       />
 
-      <MatchCourt :state="state" :roster="TEAM_ROSTER" />
+      <MatchCourt :state="state" :roster="TEAM_ROSTER" @select="openPlayer" />
 
       <div class="match-actions">
         <button
@@ -59,6 +72,13 @@ function resetMatch() {
           Сбросить
         </button>
       </div>
+
+      <MatchPlayerMenu
+        v-if="selectedPlayer"
+        :player="selectedPlayer"
+        @stat="recordStat"
+        @close="selectedPlayer = null"
+      />
 
       <div v-if="confirmingReset" class="reset-confirm" role="alert">
         <p>Сбросить матч и вернуться к расстановке?</p>
