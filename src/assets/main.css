@@ -5,8 +5,32 @@
   margin: 0;
 }
 
+:root {
+  --color-bg: #f2f4f7;
+  --color-surface: #ffffff;
+  --color-text: #1c2430;
+  --color-muted: #5b6673;
+  --color-primary: #1f5fbf;
+  --color-primary-ink: #ffffff;
+  --color-focus: #7aa7ef;
+  --radius: 12px;
+  --gap: 16px;
+  --page-pad: 16px;
+  --tap-size: 48px;
+  --shadow: 0 1px 3px rgb(16 24 40 / 12%);
+
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family:
     system-ui,
     -apple-system,
@@ -14,4 +38,119 @@ body {
     Roboto,
     sans-serif;
   line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-size);
+  padding: 8px var(--page-pad);
+  padding-top: max(8px, env(safe-area-inset-top));
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.app-bar__title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.app-content {
+  flex: 1;
+  width: 100%;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--page-pad);
+  padding-right: max(var(--page-pad), env(safe-area-inset-right));
+  padding-left: max(var(--page-pad), env(safe-area-inset-left));
+}
+
+h1 {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  line-height: 1.2;
+}
+
+p {
+  color: var(--color-muted);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-width: var(--tap-size);
+  min-height: var(--tap-size);
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  min-height: var(--tap-size);
+  padding: 0 12px;
+  border: 1px solid #c7ced8;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* Планшет: просторнее поля, крупнее заголовки. */
+@media (min-width: 600px) {
+  :root {
+    --page-pad: 24px;
+    --gap: 20px;
+  }
+}
+
+/* Широкий экран: контент не растягивается на всю ширину. */
+@media (min-width: 1024px) {
+  .screen {
+    max-width: 1120px;
+  }
 }

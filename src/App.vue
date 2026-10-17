@@ -3,5 +3,12 @@ import { RouterView } from 'vue-router'
 </script>
 
 <template>
-  <RouterView />
+  <div class="app">
+    <header class="app-bar">
+      <span class="app-bar__title">Помощник тренера</span>
+    </header>
+    <main class="app-content">
+      <RouterView />
+    </main>
+  </div>
 </template>
