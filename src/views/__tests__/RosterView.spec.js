@@ -7,7 +7,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ROLES } from '../../domain/constants.js'
 import { defaultLineup } from '../../domain/lineup.js'
-import { TEAM_ROSTER } from '../../domain/players.js'
+import { TEAM_ROSTER } from '../../domain/__tests__/fixtures/team-roster.js'
 import { loadRosterSettings, saveRosterSettings } from '../../storage.js'
 import RosterView from '../RosterView.vue'
 
@@ -34,7 +34,7 @@ function testRouter() {
 }
 
 async function mountView({ storage = fakeStorage(), settings } = {}) {
-  if (settings) saveRosterSettings(settings, storage)
+  saveRosterSettings(settings ?? { players: TEAM_ROSTER, defaultLineup: DEFAULT_SIX }, storage)
 
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -104,6 +104,30 @@ describe('RosterView', () => {
 
     const numbers = wrapper.findAll('.roster-row__number').map((item) => item.text())
     expect(numbers).toEqual(['2', '3', '5', '9', '9', '10', '11', '12', '14', '17', '50'])
+  })
+
+  it('stores the default team name', async () => {
+    const { wrapper, storage } = await mountView()
+    const input = wrapper.get('[data-field="default-team-name"]')
+
+    expect(input.element.value).toBe('')
+
+    await input.setValue('Наши')
+    await input.trigger('change')
+
+    expect(loadRosterSettings(storage).teamName).toBe('Наши')
+  })
+
+  it('shows the saved default team name', async () => {
+    const { wrapper } = await mountView({
+      settings: {
+        players: TEAM_ROSTER,
+        defaultLineup: DEFAULT_SIX,
+        teamName: 'Динамо-2',
+      },
+    })
+
+    expect(wrapper.get('[data-field="default-team-name"]').element.value).toBe('Динамо-2')
   })
 
   it('adds a player and persists them', async () => {
@@ -225,12 +249,15 @@ describe('RosterView', () => {
 
   it('exports the roster and the default six as JSON into the text area', async () => {
     const { wrapper } = await mountView()
+    await wrapper.get('[data-field="default-team-name"]').setValue('Наши')
+    await wrapper.get('[data-field="default-team-name"]').trigger('change')
 
     await wrapper.get('[data-action="export-roster"]').trigger('click')
     await flushPromises()
 
     const payload = JSON.parse(wrapper.get('[data-field="roster-json"]').element.value)
     expect(payload.version).toBe(1)
+    expect(payload.teamName).toBe('Наши')
     expect(payload.players).toHaveLength(TEAM_ROSTER.length)
     expect(payload.defaultLineup).toEqual(DEFAULT_SIX)
   })
@@ -239,6 +266,7 @@ describe('RosterView', () => {
     const { wrapper, storage } = await mountView()
     const json = JSON.stringify({
       version: 1,
+      teamName: 'Импортные',
       players: [
         { id: 'imported', firstName: 'Новый', lastName: 'Игрок', number: 77, role: ROLES.SETTER },
       ],
@@ -262,8 +290,10 @@ describe('RosterView', () => {
     expect(wrapper.findAll('[data-roster-player]')).toHaveLength(1)
     expect(wrapper.text()).toContain('Новый Игрок')
     expect(wrapper.get('[data-zone="1"]').text()).toContain('Игрок')
+    expect(wrapper.get('[data-field="default-team-name"]').element.value).toBe('Импортные')
     expect(wrapper.get('[role="status"]').text()).toContain('Состав заменён')
     expect(loadRosterSettings(storage).players[0].id).toBe('imported')
+    expect(loadRosterSettings(storage).teamName).toBe('Импортные')
   })
 
   it('reports broken JSON and keeps the roster', async () => {

@@ -70,10 +70,11 @@ export function clearMatch(storage = globalThis.localStorage) {
 }
 
 /**
- * Сохраняет состав и дефолтную шестёрку. Как и матч, это одна цельная запись:
- * либо оба раздела, либо ничего. Ошибка хранилища не должна ломать экран.
+ * Сохраняет состав, дефолтную шестёрку и название команды. Как и матч, это
+ * одна цельная запись: либо всё, либо ничего. Ошибка хранилища не должна
+ * ломать экран.
  *
- * @param {{ players: object[], defaultLineup: object }} settings
+ * @param {{ players: object[], defaultLineup: object, teamName?: string }} settings
  * @param {Storage} [storage]
  * @returns {boolean}
  */
@@ -87,12 +88,12 @@ export function saveRosterSettings(settings, storage = globalThis.localStorage) 
 }
 
 /**
- * Читает состав и дефолтную шестёрку. Битые игроки и чужие версии дают null —
- * вызывающий код засеет встроенный состав. Отсутствующая или битая шестёрка
- * возвращается как null: её восстановит домен.
+ * Читает состав, дефолтную шестёрку и название команды. Битые игроки и чужие
+ * версии дают null — вызывающий код создаст пустой состав. Отсутствующая или
+ * битая шестёрка возвращается как null: её восстановит домен.
  *
  * @param {Storage} [storage]
- * @returns {{ players: object[], defaultLineup: object | null } | null}
+ * @returns {{ players: object[], defaultLineup: object | null, teamName: string } | null}
  */
 export function loadRosterSettings(storage = globalThis.localStorage) {
   try {
@@ -107,7 +108,9 @@ export function loadRosterSettings(storage = globalThis.localStorage) {
         ? saved.defaultLineup
         : null
 
-    return { players: saved.players, defaultLineup }
+    const teamName = typeof saved.teamName === 'string' ? saved.teamName : ''
+
+    return { players: saved.players, defaultLineup, teamName }
   } catch {
     return null
   }

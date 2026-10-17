@@ -6,7 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { defaultLineup } from '../../domain/lineup.js'
 import { EVENT_TYPES, matchState } from '../../domain/match.js'
-import { TEAM_ROSTER } from '../../domain/players.js'
+import { TEAM_ROSTER } from '../../domain/__tests__/fixtures/team-roster.js'
 import { TEAMS } from '../../domain/score.js'
 import { STAT_LABELS, STAT_TYPES, countersForPlayer } from '../../domain/stats.js'
 import { loadMatch, saveMatch, saveRosterSettings } from '../../storage.js'
@@ -80,6 +80,7 @@ let storage
 
 beforeEach(() => {
   storage = fakeStorage()
+  saveRosterSettings({ players: TEAM_ROSTER, defaultLineup: LINEUP }, storage)
 })
 
 describe('MatchView scoreboard', () => {

@@ -7,7 +7,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { ROLES } from '../../domain/constants.js'
 import { defaultLineup } from '../../domain/lineup.js'
 import { EVENT_TYPES } from '../../domain/match.js'
-import { TEAM_ROSTER } from '../../domain/players.js'
+import { TEAM_ROSTER } from '../../domain/__tests__/fixtures/team-roster.js'
 import { TEAMS } from '../../domain/score.js'
 import { loadMatch, saveRosterSettings } from '../../storage.js'
 import SetupView from '../SetupView.vue'
@@ -26,6 +26,7 @@ function testRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
+      { path: '/', name: 'lineup', component: { template: '<div />' } },
       { path: '/setup', name: 'setup', component: { template: '<div />' } },
       { path: '/match', name: 'match', component: { template: '<div />' } },
     ],
@@ -52,6 +53,7 @@ let storage
 
 beforeEach(() => {
   storage = fakeStorage()
+  saveRosterSettings({ players: TEAM_ROSTER, defaultLineup: defaultLineup(TEAM_ROSTER) }, storage)
 })
 
 describe('SetupView', () => {
@@ -166,5 +168,50 @@ describe('SetupView', () => {
       playerId: 'fatkulin',
       role: ROLES.SETTER,
     })
+  })
+
+  it('does not start until the roster is configured', async () => {
+    const empty = fakeStorage()
+    const { wrapper, router } = await mountView(empty)
+
+    expect(wrapper.get('[data-field="roster-warning"]').text()).toContain('настройте состав')
+    expect(wrapper.get('[data-action="start"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.get('[data-field="team-name"]').setValue('Наши')
+    await wrapper.get('[data-field="opponent"]').setValue('Динамо')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('setup')
+    expect(loadMatch(empty)).toBeNull()
+  })
+
+  it('returns to the lineup from the roster warning', async () => {
+    const { wrapper, router } = await mountView(fakeStorage())
+
+    await wrapper.get('[data-action="to-lineup"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('lineup')
+  })
+
+  it('prefills and selects the default team name', async () => {
+    saveRosterSettings(
+      {
+        players: TEAM_ROSTER,
+        defaultLineup: defaultLineup(TEAM_ROSTER),
+        teamName: 'Динамо-2',
+      },
+      storage,
+    )
+    const { wrapper } = await mountView(storage)
+    const input = wrapper.get('[data-field="team-name"]')
+
+    expect(input.element.value).toBe('Динамо-2')
+
+    await input.trigger('focus')
+
+    expect(input.element.selectionStart).toBe(0)
+    expect(input.element.selectionEnd).toBe('Динамо-2'.length)
   })
 })

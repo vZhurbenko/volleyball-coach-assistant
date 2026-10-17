@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
@@ -21,15 +21,23 @@ lineupStore.load(props.storage)
 const { lineup } = storeToRefs(lineupStore)
 
 const saved = loadMatch(props.storage)
-const teamName = ref(saved?.settings?.teamName ?? '')
+const teamName = ref(saved?.settings?.teamName ?? lineupStore.defaultTeamName)
 const opponent = ref(saved?.settings?.opponent ?? '')
 const serving = ref(saved?.settings?.serving ?? TEAMS.US)
 const substitutionMode = ref(saved?.settings?.substitutionMode ?? SUBSTITUTION_MODES.COUNT)
 
+/** Матч не начинается, пока шесть зон не заполнены и роли не сходятся. */
+const rosterReady = computed(() => lineupStore.validation.valid)
+
+/** При фокусе выделяем подставленное название — ввод сразу заменит его. */
+function selectDefaultName(event) {
+  if (event.target.value === lineupStore.defaultTeamName) event.target.select()
+}
+
 function startGame() {
   const team = teamName.value.trim()
   const opponentName = opponent.value.trim()
-  if (!team || !opponentName) return
+  if (!team || !opponentName || !rosterReady.value) return
 
   saveMatch(
     {
@@ -69,6 +77,7 @@ function startGame() {
           type="text"
           autocomplete="off"
           placeholder="Название команды"
+          @focus="selectDefaultName"
         />
       </div>
 
@@ -126,10 +135,22 @@ function startGame() {
         </p>
       </fieldset>
 
+      <div v-if="!rosterReady" class="setup-warning" data-field="roster-warning" role="alert">
+        <p>Сначала настройте состав и стартовую шестёрку — заполните все шесть зон.</p>
+        <button
+          type="button"
+          class="button-secondary"
+          data-action="to-lineup"
+          @click="router.push({ name: 'lineup' })"
+        >
+          К расстановке
+        </button>
+      </div>
+
       <button
         type="submit"
         class="button-block"
-        :disabled="!teamName.trim() || !opponent.trim()"
+        :disabled="!teamName.trim() || !opponent.trim() || !rosterReady"
         data-action="start"
       >
         Начать игру
@@ -170,6 +191,23 @@ function startGame() {
   color: var(--ink-soft);
   font-size: 0.82rem;
   line-height: 1.45;
+}
+
+.setup-warning {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #efc9c5;
+  border-left: 3px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.setup-warning .button-secondary {
+  align-self: flex-start;
 }
 
 .button-block {
