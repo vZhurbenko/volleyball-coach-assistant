@@ -6,6 +6,7 @@ import { createGuards } from './guards.js'
 import LineupView from '../views/LineupView.vue'
 import SetupView from '../views/SetupView.vue'
 import MatchView from '../views/MatchView.vue'
+import SetResultView from '../views/SetResultView.vue'
 import SummaryView from '../views/SummaryView.vue'
 
 /**
@@ -47,6 +48,13 @@ export function createAppRouter({
         name: 'match',
         component: MatchView,
         beforeEnter: guards.requireMatch,
+        props: { storage },
+      },
+      {
+        path: '/set-result',
+        name: 'set-result',
+        component: SetResultView,
+        beforeEnter: guards.requireSetResult,
         props: { storage },
       },
       {

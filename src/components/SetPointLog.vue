@@ -1,0 +1,117 @@
+<script setup>
+import { computed } from 'vue'
+
+import { TEAMS } from '../domain/score.js'
+
+const props = defineProps({
+  set: { type: Object, required: true },
+  history: { type: Array, required: true },
+  teamName: { type: String, default: 'Мы' },
+  opponent: { type: String, default: 'Соперник' },
+  /** На отдельном экране ходу партии можно отдать больше высоты. */
+  tall: { type: Boolean, default: false },
+})
+
+/** Мы всегда в левой колонке и синие, соперник — справа и красный. */
+const rows = computed(() => {
+  const points = props.history.filter((point) => point.setNumber === props.set.number)
+  const score = { us: 0, them: 0 }
+
+  return points.map((point) => {
+    score[point.team] += 1
+
+    return {
+      first: point.team === TEAMS.US ? score.us : '',
+      second: point.team === TEAMS.THEM ? score.them : '',
+    }
+  })
+})
+</script>
+
+<template>
+  <section class="point-log" :class="{ 'point-log--tall': tall }" data-field="point-log">
+    <h3 class="point-log__title">Ход партии</h3>
+
+    <div class="point-log__scroll">
+      <table class="point-log__table">
+        <thead>
+          <tr>
+            <th scope="col">{{ teamName }}</th>
+            <th scope="col">{{ opponent }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, index) in rows" :key="index" data-point-row>
+            <td :class="row.first ? 'point-log__score--us' : ''">{{ row.first }}</td>
+            <td :class="row.second ? 'point-log__score--them' : ''">{{ row.second }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.point-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.point-log__title {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.point-log__scroll {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e2e6ec;
+  border-radius: 10px;
+}
+
+.point-log--tall .point-log__scroll {
+  max-height: 55vh;
+}
+
+.point-log__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.point-log__table th,
+.point-log__table td {
+  width: 50%;
+  padding: 5px 10px;
+  border-bottom: 1px solid #d7dde5;
+  text-align: center;
+}
+
+.point-log__table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.point-log__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.point-log__table td {
+  font-weight: 600;
+}
+
+.point-log__score--us {
+  color: #3b82f6;
+}
+
+.point-log__score--them {
+  color: #ef4444;
+}
+</style>

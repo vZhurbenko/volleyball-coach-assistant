@@ -4,8 +4,9 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 
+import SetPointLog from '../components/SetPointLog.vue'
 import { TEAM_ROSTER, findPlayer } from '../domain/players.js'
-import { TEAMS, setsWon } from '../domain/score.js'
+import { setsWon } from '../domain/score.js'
 import { STAT_LABELS, STAT_TYPES, countersForPlayer, countersForSet } from '../domain/stats.js'
 import { useLineupStore } from '../stores/lineup.js'
 import { useMatchStore } from '../stores/match.js'
@@ -49,21 +50,6 @@ const totalRows = computed(() =>
     player,
     counters: countersForPlayer(stats.value, player.id),
   })),
-)
-
-const streakSections = computed(() =>
-  sets.value
-    .map((set) => ({
-      setNumber: set.number,
-      text: (state.value?.streaks ?? [])
-        .filter((streak) => streak.setNumber === set.number)
-        .map(
-          (streak) =>
-            `${streak.team === TEAMS.US ? teamName.value : opponent.value} +${streak.points}`,
-        )
-        .join(' · '),
-    }))
-    .filter((section) => section.text),
 )
 
 const retiredPlayers = computed(() =>
@@ -146,6 +132,13 @@ function newGame() {
           </table>
         </div>
         <p v-else class="summary__empty">Статистика не велась</p>
+
+        <SetPointLog
+          :set="section.set"
+          :history="state.history"
+          :team-name="teamName"
+          :opponent="opponent"
+        />
       </section>
 
       <section class="summary__card" data-field="total-stats">
@@ -170,13 +163,6 @@ function newGame() {
             </tbody>
           </table>
         </div>
-      </section>
-
-      <section class="summary__card" data-field="streaks">
-        <h2>Серии очков</h2>
-        <p v-for="section in streakSections" :key="section.setNumber">
-          Партия {{ section.setNumber }}: {{ section.text }}
-        </p>
       </section>
 
       <section

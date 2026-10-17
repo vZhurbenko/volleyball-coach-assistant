@@ -70,6 +70,31 @@ h1 {
   line-height: 1.2;
 }
 
+/* Переход между экранами: короткий fade со сдвигом. */
+.screen-enter-active,
+.screen-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.screen-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.screen-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-enter-active,
+  .screen-leave-active {
+    transition: none;
+  }
+}
+
 p {
   color: var(--color-muted);
 }
@@ -186,7 +211,9 @@ input[type='checkbox'] {
     break-inside: avoid;
   }
 
-  .table-wrap {
+  .table-wrap,
+  .point-log__scroll {
+    max-height: none;
     overflow: visible;
   }
 

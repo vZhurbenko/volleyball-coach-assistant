@@ -34,6 +34,16 @@ export function createGuards(readMatchState) {
       return readMatchState() ? true : { name: 'lineup' }
     },
 
+    /** `/set-result` — только между партиями. */
+    requireSetResult() {
+      const state = readMatchState()
+      if (!state) return { name: 'lineup' }
+      if (isMatchOver(state.score)) return { name: 'summary' }
+      if (!isSetOver(currentSet(state.score))) return { name: 'match' }
+
+      return true
+    },
+
     /** `/summary` — только для законченного матча. */
     requireFinishedMatch() {
       const state = readMatchState()

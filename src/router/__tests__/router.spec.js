@@ -54,6 +54,7 @@ describe('routes', () => {
     expect(router.resolve('/').name).toBe('lineup')
     expect(router.resolve('/setup').name).toBe('setup')
     expect(router.resolve('/match').name).toBe('match')
+    expect(router.resolve('/set-result').name).toBe('set-result')
     expect(router.resolve('/summary').name).toBe('summary')
   })
 })
@@ -79,6 +80,38 @@ describe('reload mid-match', () => {
     saveSavedMatch([SET_START, ...Array.from({ length: 25 }, () => POINT_US)])
 
     const router = await startAt('/')
+
+    expect(router.currentRoute.value.name).toBe('lineup')
+  })
+})
+
+describe('set result route', () => {
+  it('opens the result between sets', async () => {
+    saveSavedMatch([SET_START, ...Array.from({ length: 25 }, () => POINT_US)])
+
+    const router = await startAt('/set-result')
+
+    expect(router.currentRoute.value.name).toBe('set-result')
+  })
+
+  it('redirects to the match while the set is running', async () => {
+    saveSavedMatch([SET_START, POINT_US])
+
+    const router = await startAt('/set-result')
+
+    expect(router.currentRoute.value.name).toBe('match')
+  })
+
+  it('redirects to the summary after the match', async () => {
+    saveSavedMatch(finishedMatchEvents())
+
+    const router = await startAt('/set-result')
+
+    expect(router.currentRoute.value.name).toBe('summary')
+  })
+
+  it('redirects to the lineup without a match', async () => {
+    const router = await startAt('/set-result')
 
     expect(router.currentRoute.value.name).toBe('lineup')
   })

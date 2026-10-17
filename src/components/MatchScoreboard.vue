@@ -14,18 +14,6 @@ defineEmits(['point'])
 const set = computed(() => currentSet(props.state.score))
 const won = computed(() => setsWon(props.state.score))
 const serving = computed(() => props.state.score.serving)
-
-const streaks = computed(() =>
-  props.state.streaks
-    .filter((streak) => streak.setNumber === set.value.number)
-    .map(
-      (streak) => `${streak.team === TEAMS.US ? props.teamName : props.opponent} +${streak.points}`,
-    ),
-)
-
-const streakText = computed(() =>
-  streaks.value.length ? streaks.value.join(' · ') : 'Серий пока нет',
-)
 </script>
 
 <template>
@@ -74,8 +62,6 @@ const streakText = computed(() =>
         </span>
       </button>
     </div>
-
-    <p class="scoreboard__streaks" data-field="streaks">{{ streakText }}</p>
   </section>
 </template>
 
@@ -180,12 +166,6 @@ const streakText = computed(() =>
   font-weight: 600;
   letter-spacing: 0.02em;
   opacity: 0.85;
-}
-
-.scoreboard__streaks {
-  min-height: 1.5em;
-  color: var(--color-muted);
-  font-size: 0.9rem;
 }
 
 @keyframes score-pop {

@@ -61,6 +61,32 @@ describe('resume guard', () => {
   })
 })
 
+describe('set-result guard', () => {
+  it('blocks the set result without a match', () => {
+    const { requireSetResult } = createGuards(() => null)
+
+    expect(requireSetResult()).toEqual({ name: 'lineup' })
+  })
+
+  it('keeps the coach on the match while the set is running', () => {
+    const { requireSetResult } = createGuards(() => IN_PROGRESS)
+
+    expect(requireSetResult()).toEqual({ name: 'match' })
+  })
+
+  it('allows the result between sets', () => {
+    const { requireSetResult } = createGuards(() => BETWEEN_SETS)
+
+    expect(requireSetResult()).toBe(true)
+  })
+
+  it('sends the coach to the summary after the match', () => {
+    const { requireSetResult } = createGuards(() => FINISHED)
+
+    expect(requireSetResult()).toEqual({ name: 'summary' })
+  })
+})
+
 describe('match guard', () => {
   it('blocks the match screen until a match is started', () => {
     const { requireMatch } = createGuards(() => null)
