@@ -46,34 +46,10 @@ body {
   min-height: 100dvh;
 }
 
-.app {
-  display: flex;
-  flex-direction: column;
+.app-content {
+  width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-}
-
-.app-bar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  min-height: var(--tap-size);
-  padding: 8px var(--page-pad);
-  padding-top: max(8px, env(safe-area-inset-top));
-  background: var(--color-surface);
-  box-shadow: var(--shadow);
-}
-
-.app-bar__title {
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.app-content {
-  flex: 1;
-  width: 100%;
 }
 
 .screen {
@@ -84,6 +60,7 @@ body {
   max-width: 960px;
   margin: 0 auto;
   padding: var(--page-pad);
+  padding-top: max(var(--page-pad), env(safe-area-inset-top));
   padding-right: max(var(--page-pad), env(safe-area-inset-right));
   padding-left: max(var(--page-pad), env(safe-area-inset-left));
 }
@@ -184,7 +161,6 @@ input[type='checkbox'] {
 
 /* Печать итогов: только содержимое, без интерфейса. */
 @media print {
-  .app-bar,
   .no-print {
     display: none !important;
   }
