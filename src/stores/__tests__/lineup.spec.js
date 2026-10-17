@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 import { ROLES } from '../../domain/constants.js'
-import { defaultLineup } from '../../domain/lineup.js'
-import { TEAM_ROSTER } from '../../domain/players.js'
+import { defaultLineup, emptyLineup } from '../../domain/lineup.js'
+import { TEAM_ROSTER } from '../../domain/__tests__/fixtures/team-roster.js'
 import { loadRosterSettings, saveRosterSettings } from '../../storage.js'
 import { useLineupStore } from '../lineup.js'
 
@@ -52,6 +52,13 @@ function storedRoster(roster = TEAM_ROSTER) {
 
 const DEFAULT_SIX = defaultLineup(TEAM_ROSTER)
 
+/** Хранилище с уже сохранённым тестовым составом и шестёркой. */
+function seededStorage() {
+  const storage = fakeStorage()
+  saveRosterSettings({ players: storedRoster(), defaultLineup: DEFAULT_SIX }, storage)
+  return storage
+}
+
 const LIBERO = {
   id: 'lib',
   firstName: 'Лев',
@@ -74,17 +81,18 @@ beforeEach(() => {
 })
 
 describe('load', () => {
-  it('seeds the built-in roster and the default six into empty storage', () => {
+  it('starts with an empty roster and an empty six in empty storage', () => {
     const storage = fakeStorage()
     const store = useLineupStore()
 
     store.load(storage)
 
-    expect(store.roster).toEqual(storedRoster())
-    expect(store.lineup).toEqual(DEFAULT_SIX)
+    expect(store.roster).toEqual([])
+    expect(store.lineup).toEqual(emptyLineup())
     expect(loadRosterSettings(storage)).toEqual({
-      players: storedRoster(),
-      defaultLineup: DEFAULT_SIX,
+      players: [],
+      defaultLineup: emptyLineup(),
+      teamName: '',
     })
   })
 
@@ -173,7 +181,7 @@ describe('load', () => {
 
 describe('working lineup and default six', () => {
   it('does not persist edits made on the lineup screen', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
 
@@ -186,7 +194,7 @@ describe('working lineup and default six', () => {
   })
 
   it('updates both lineups and persists on assignDefault', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
 
@@ -200,7 +208,7 @@ describe('working lineup and default six', () => {
   })
 
   it('restores the default six on reset', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
 
@@ -220,7 +228,7 @@ describe('working lineup and default six', () => {
 describe('addPlayer', () => {
   it('keeps the roster sorted by number', () => {
     const store = useLineupStore()
-    store.load(fakeStorage())
+    store.load(seededStorage())
 
     const numbers = store.roster.map((player) => player.number)
     expect(numbers).toEqual([...numbers].sort((first, second) => first - second))
@@ -259,7 +267,7 @@ describe('addPlayer', () => {
   })
 
   it('rejects invalid input without changing anything', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
     const before = loadRosterSettings(storage)
@@ -279,7 +287,7 @@ describe('addPlayer', () => {
 
   it('rejects a duplicate id', () => {
     const store = useLineupStore()
-    store.load(fakeStorage())
+    store.load(seededStorage())
 
     const result = store.addPlayer(NEW_PLAYER, 'titov')
 
@@ -290,7 +298,7 @@ describe('addPlayer', () => {
 
 describe('updatePlayer', () => {
   it('changes the name and the number without touching the lineup', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
 
@@ -310,7 +318,7 @@ describe('updatePlayer', () => {
   })
 
   it('syncs the role snapshots in both lineups', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
 
@@ -327,7 +335,7 @@ describe('updatePlayer', () => {
 
   it('preserves a per-zone role override', () => {
     const store = useLineupStore()
-    store.load(fakeStorage())
+    store.load(seededStorage())
     store.assignDefault(1, { playerId: 'titov', role: ROLES.SETTER })
 
     store.updatePlayer('titov', {
@@ -341,7 +349,7 @@ describe('updatePlayer', () => {
   })
 
   it('removes the player from the zones when they become a libero', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
 
@@ -376,7 +384,7 @@ describe('updatePlayer', () => {
 
   it('rejects an unknown player and invalid input', () => {
     const store = useLineupStore()
-    store.load(fakeStorage())
+    store.load(seededStorage())
 
     expect(store.updatePlayer('ghost', NEW_PLAYER).violations[0].code).toBe('PLAYER_NOT_FOUND')
     expect(store.updatePlayer('titov', { ...NEW_PLAYER, role: 'coach' }).ok).toBe(false)
@@ -386,7 +394,7 @@ describe('updatePlayer', () => {
 
 describe('removePlayer', () => {
   it('removes the player from the roster, both lineups and the storage', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
 
@@ -399,7 +407,7 @@ describe('removePlayer', () => {
   })
 
   it('ignores an unknown player', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
     const before = loadRosterSettings(storage)
@@ -430,7 +438,7 @@ describe('immutability', () => {
   it('never mutates the built-in roster', () => {
     const snapshot = JSON.parse(JSON.stringify(TEAM_ROSTER))
     const store = useLineupStore()
-    store.load(fakeStorage())
+    store.load(seededStorage())
 
     store.updatePlayer('titov', { ...NEW_PLAYER, lastName: 'Титов' })
     store.addPlayer(NEW_PLAYER, 'petrov')
@@ -443,17 +451,31 @@ describe('immutability', () => {
 describe('exportSettings', () => {
   it('returns a detached copy of the roster and the default six', () => {
     const store = useLineupStore()
-    store.load(fakeStorage())
+    store.load(seededStorage())
     store.assignDefault(1, { playerId: 'fatkulin', role: ROLES.SETTER })
 
     const exported = store.exportSettings()
 
     expect(exported.version).toBe(1)
+    expect(exported.teamName).toBe('')
     expect(exported.players).toEqual(store.roster)
     expect(exported.defaultLineup.zones[1].playerId).toBe('fatkulin')
 
     exported.players[0].lastName = 'Изменено'
     expect(store.roster[0].lastName).not.toBe('Изменено')
+  })
+})
+
+describe('default team name', () => {
+  it('stores and persists the default team name', () => {
+    const storage = seededStorage()
+    const store = useLineupStore()
+    store.load(storage)
+
+    store.setDefaultTeamName('  Наши  ')
+
+    expect(store.defaultTeamName).toBe('Наши')
+    expect(loadRosterSettings(storage).teamName).toBe('Наши')
   })
 })
 
@@ -479,21 +501,24 @@ describe('replaceSettings', () => {
     store.load(storage)
 
     const result = store.replaceSettings({
+      teamName: 'Наши',
       players: IMPORTED_PLAYERS,
       defaultLineup: IMPORTED_SIX,
     })
 
     expect(result).toEqual({ ok: true })
+    expect(store.defaultTeamName).toBe('Наши')
     expect(store.roster).toEqual(IMPORTED_PLAYERS)
     expect(store.lineup).toEqual(IMPORTED_SIX)
     expect(loadRosterSettings(storage)).toEqual({
       players: IMPORTED_PLAYERS,
       defaultLineup: IMPORTED_SIX,
+      teamName: 'Наши',
     })
   })
 
   it('rejects invalid input without changing anything', () => {
-    const storage = fakeStorage()
+    const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
     const before = loadRosterSettings(storage)
@@ -507,7 +532,7 @@ describe('replaceSettings', () => {
 
   it('rejects an unknown file version', () => {
     const store = useLineupStore()
-    store.load(fakeStorage())
+    store.load(seededStorage())
 
     const result = store.replaceSettings({ version: 99, players: IMPORTED_PLAYERS })
 

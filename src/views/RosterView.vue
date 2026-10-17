@@ -22,6 +22,12 @@ const { roster, lineup, validation } = storeToRefs(lineupStore)
 
 const ROLE_OPTIONS = [...COURT_ROLES, ROLES.LIBERO]
 
+const teamNameDraft = ref(lineupStore.defaultTeamName)
+
+function saveTeamName() {
+  lineupStore.setDefaultTeamName(teamNameDraft.value)
+}
+
 const pickingZone = ref(null)
 const dialogPlayers = computed(() =>
   pickingZone.value === null
@@ -123,6 +129,7 @@ function importRoster() {
   }
 
   cancelForm()
+  teamNameDraft.value = lineupStore.defaultTeamName
   importStatus.value = `Состав заменён: игроков — ${roster.value.length}.`
   importFailed.value = false
 }
@@ -130,10 +137,29 @@ function importRoster() {
 
 <template>
   <section class="screen roster">
-    <h1>Состав команды</h1>
+    <h1>Настройки команды</h1>
     <p class="hint">
       Менять состав можно до начала первой партии. Изменения сохраняются на этом устройстве сразу.
     </p>
+
+    <section class="board board--pad roster__board" data-field="team-settings">
+      <h2>Наша команда</h2>
+      <label class="field">
+        <span class="field__label">Название по умолчанию</span>
+        <input
+          v-model="teamNameDraft"
+          data-field="default-team-name"
+          type="text"
+          autocomplete="off"
+          placeholder="Название команды"
+          @change="saveTeamName"
+        />
+      </label>
+      <p class="hint">
+        Подставляется в настройках игры. При фокусе подставленное название выделяется — можно сразу
+        печатать своё.
+      </p>
+    </section>
 
     <section class="board board--pad roster__board" data-field="roster-editor">
       <div class="section-head">

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import { defaultLineup, emptyLineup } from '../domain/lineup.js'
 import { EVENT_TYPES, matchState } from '../domain/match.js'
-import { TEAM_ROSTER } from '../domain/players.js'
+import { TEAM_ROSTER } from '../domain/__tests__/fixtures/team-roster.js'
 import { TEAMS } from '../domain/score.js'
 import {
   ROSTER_STORAGE_KEY,
@@ -151,7 +151,7 @@ describe('restoring a match', () => {
   })
 })
 
-const ROSTER_SETTINGS = { players: TEAM_ROSTER, defaultLineup: SIX }
+const ROSTER_SETTINGS = { players: TEAM_ROSTER, defaultLineup: SIX, teamName: 'Наши' }
 
 describe('saveRosterSettings', () => {
   it('saves and restores the roster and the default six', () => {
@@ -188,13 +188,21 @@ describe('loadRosterSettings', () => {
       [ROSTER_STORAGE_KEY]: JSON.stringify({ players: [], defaultLineup: emptyLineup() }),
     })
 
-    expect(loadRosterSettings(storage)).toEqual({ players: [], defaultLineup: emptyLineup() })
+    expect(loadRosterSettings(storage)).toEqual({
+      players: [],
+      defaultLineup: emptyLineup(),
+      teamName: '',
+    })
   })
 
   it('returns a null default six when that part is missing', () => {
     const storage = fakeStorage({ [ROSTER_STORAGE_KEY]: JSON.stringify({ players: TEAM_ROSTER }) })
 
-    expect(loadRosterSettings(storage)).toEqual({ players: TEAM_ROSTER, defaultLineup: null })
+    expect(loadRosterSettings(storage)).toEqual({
+      players: TEAM_ROSTER,
+      defaultLineup: null,
+      teamName: '',
+    })
   })
 
   it.each([

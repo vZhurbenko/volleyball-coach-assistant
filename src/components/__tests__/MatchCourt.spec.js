@@ -5,7 +5,7 @@ import { mount } from '@vue/test-utils'
 import { ROLES } from '../../domain/constants.js'
 import { defaultLineup } from '../../domain/lineup.js'
 import { EVENT_TYPES, matchState } from '../../domain/match.js'
-import { TEAM_ROSTER } from '../../domain/players.js'
+import { TEAM_ROSTER } from '../../domain/__tests__/fixtures/team-roster.js'
 import { TEAMS } from '../../domain/score.js'
 import MatchCourt from '../MatchCourt.vue'
 

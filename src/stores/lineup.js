@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import { cloneLineup, defaultLineup, validateLineup } from '../domain/lineup.js'
-import { TEAM_ROSTER, findPlayer } from '../domain/players.js'
+import { cloneLineup, defaultLineup, emptyLineup, validateLineup } from '../domain/lineup.js'
+import { findPlayer } from '../domain/players.js'
 import {
   applyRoleChange,
   createPlayer,
@@ -40,14 +40,15 @@ function newPlayerId() {
  * на `/` не переписывают шаблон, иначе любая случайная перестановка перед матчем
  * стала бы новой «стартовой шестёркой».
  *
- * Рабочая шестёрка живёт только в памяти. Состав и шаблон пишутся в хранилище
- * сразу после каждого изменения; `load()` идемпотентен и засевает встроенный
- * состав, если хранилище пустое.
+ * Рабочая шестёрка живёт только в памяти. Состав, дефолтное название команды
+ * и шаблон пишутся в хранилище сразу после каждого изменения; `load()`
+ * идемпотентен и создаёт пустой состав, если хранилище пустое.
  */
 export const useLineupStore = defineStore('lineup', () => {
-  const roster = ref(TEAM_ROSTER.map(toStoredPlayer))
-  const lineup = ref(defaultLineup(TEAM_ROSTER))
-  const defaultSix = ref(cloneLineup(lineup.value))
+  const roster = ref([])
+  const lineup = ref(emptyLineup())
+  const defaultSix = ref(emptyLineup())
+  const defaultTeamName = ref('')
   const validation = computed(() => validateLineup(lineup.value, roster.value))
 
   let storage
@@ -66,9 +67,10 @@ export const useLineupStore = defineStore('lineup', () => {
 
     const saved = loadRosterSettings(storage)
     if (!saved) {
-      roster.value = sortRoster(TEAM_ROSTER.map(toStoredPlayer))
-      defaultSix.value = defaultLineup(TEAM_ROSTER)
-      lineup.value = cloneLineup(defaultSix.value)
+      roster.value = []
+      defaultSix.value = emptyLineup()
+      lineup.value = emptyLineup()
+      defaultTeamName.value = ''
       persistSettings()
       return
     }
@@ -76,6 +78,7 @@ export const useLineupStore = defineStore('lineup', () => {
     roster.value = sortRoster(saved.players.map((player) => ({ ...player })))
     defaultSix.value = reconcileLineup(saved.defaultLineup, roster.value)
     lineup.value = cloneLineup(defaultSix.value)
+    defaultTeamName.value = saved.teamName ?? ''
 
     // Битая или отсутствующая шестёрка — повод записать исправленную версию.
     if (!saved.defaultLineup) persistSettings()
@@ -206,24 +209,43 @@ export const useLineupStore = defineStore('lineup', () => {
     return true
   }
 
-  function persistSettings() {
-    saveRosterSettings({ players: roster.value, defaultLineup: defaultSix.value }, storage)
+  /**
+   * Запоминает название команды по умолчанию. Пустая строка допустима:
+   * тогда игра начнётся с пустого поля, как раньше.
+   *
+   * @param {string} name
+   */
+  function setDefaultTeamName(name) {
+    defaultTeamName.value = String(name ?? '').trim()
+    persistSettings()
   }
 
-  /** Отдаёт состав и шаблон для экспорта в JSON. Копии не связаны со store. */
+  function persistSettings() {
+    saveRosterSettings(
+      {
+        players: roster.value,
+        defaultLineup: defaultSix.value,
+        teamName: defaultTeamName.value,
+      },
+      storage,
+    )
+  }
+
+  /** Отдаёт состав, шестёрку и название для экспорта в JSON. */
   function exportSettings() {
     return {
       version: 1,
+      teamName: defaultTeamName.value,
       players: roster.value.map((player) => ({ ...player })),
       defaultLineup: cloneLineup(defaultSix.value),
     }
   }
 
   /**
-   * Полностью заменяет состав и шаблон шестёрки импортированными данными.
+   * Полностью заменяет состав, шаблон шестёрки и название команды.
    * Невалидный JSON или состав ничего не меняет и не пишет.
    *
-   * @param {{ version?: number, players?: unknown, defaultLineup?: object | null }} settings
+   * @param {{ version?: number, teamName?: string, players?: unknown, defaultLineup?: object | null }} settings
    * @returns {{ ok: true } | { ok: false, violations: object[] }}
    */
   function replaceSettings(settings) {
@@ -256,6 +278,7 @@ export const useLineupStore = defineStore('lineup', () => {
     roster.value = sortRoster(settings.players.map((player) => createPlayer(player, player.id)))
     defaultSix.value = reconcileLineup(settings.defaultLineup ?? null, roster.value)
     lineup.value = cloneLineup(defaultSix.value)
+    defaultTeamName.value = String(settings.teamName ?? '').trim()
     persistSettings()
 
     return { ok: true }
@@ -264,6 +287,7 @@ export const useLineupStore = defineStore('lineup', () => {
   return {
     roster,
     lineup,
+    defaultTeamName,
     validation,
     load,
     init,
@@ -275,6 +299,7 @@ export const useLineupStore = defineStore('lineup', () => {
     addPlayer,
     updatePlayer,
     removePlayer,
+    setDefaultTeamName,
     exportSettings,
     replaceSettings,
   }
