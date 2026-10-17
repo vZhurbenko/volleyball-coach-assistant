@@ -88,6 +88,14 @@ function resetMatch() {
         </button>
       </div>
 
+      <div v-if="matchOver" class="set-end" data-field="match-end">
+        <h2>Матч завершён</h2>
+        <p>Победитель: {{ setWinnerName }}</p>
+        <button type="button" data-action="go-summary" @click="router.push({ name: 'summary' })">
+          К итогам матча
+        </button>
+      </div>
+
       <div class="court-switch" role="group" aria-label="Режим площадки">
         <button
           type="button"

@@ -181,3 +181,41 @@ input[type='checkbox'] {
     max-width: 1120px;
   }
 }
+
+/* Печать итогов: только содержимое, без интерфейса. */
+@media print {
+  .app-bar,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .screen {
+    max-width: none;
+    padding: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  section,
+  table {
+    break-inside: avoid;
+  }
+
+  .table-wrap {
+    overflow: visible;
+  }
+
+  .stats-table th,
+  .stats-table td {
+    border: 1px solid #666;
+  }
+}
