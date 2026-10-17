@@ -54,6 +54,7 @@ function resetMatch() {
     <template v-if="state">
       <MatchScoreboard
         :state="state"
+        :team-name="settings.teamName || 'Мы'"
         :opponent="settings.opponent || 'Соперник'"
         @point="matchStore.addPoint"
       />

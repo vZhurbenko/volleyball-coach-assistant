@@ -76,7 +76,21 @@ describe('SetupView', () => {
 
   it('does not start the game without an opponent', async () => {
     const { wrapper, router } = await mountView(storage)
+    await wrapper.get('[data-field="team-name"]').setValue('Наши')
     await wrapper.get('[data-field="opponent"]').setValue('   ')
+
+    expect(wrapper.get('[data-action="start"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('setup')
+    expect(loadMatch(storage)).toBeNull()
+  })
+
+  it('does not start the game without our team name', async () => {
+    const { wrapper, router } = await mountView(storage)
+    await wrapper.get('[data-field="opponent"]').setValue('Динамо')
 
     expect(wrapper.get('[data-action="start"]').attributes('disabled')).toBeDefined()
 
@@ -89,6 +103,7 @@ describe('SetupView', () => {
 
   it('starts the game with the chosen settings', async () => {
     const { wrapper, router } = await mountView(storage)
+    await wrapper.get('[data-field="team-name"]').setValue('Наши')
     await wrapper.get('[data-field="opponent"]').setValue('Динамо')
     await wrapper.get('[data-field="serving-them"]').setValue()
 
@@ -98,6 +113,7 @@ describe('SetupView', () => {
     expect(router.currentRoute.value.name).toBe('match')
 
     const saved = loadMatch(storage)
+    expect(saved.settings.teamName).toBe('Наши')
     expect(saved.settings.opponent).toBe('Динамо')
     expect(saved.settings.serving).toBe(TEAMS.THEM)
     expect(saved.settings.substitutionMode).toBe('count')
@@ -113,6 +129,7 @@ describe('SetupView', () => {
 
   it('restores the saved settings after a reload', async () => {
     const first = await mountView(storage)
+    await first.wrapper.get('[data-field="team-name"]').setValue('Наши')
     await first.wrapper.get('[data-field="opponent"]').setValue('Динамо')
     await first.wrapper.get('[data-field="serving-them"]').setValue()
     await first.wrapper.get('[data-field="substitution-fivb"]').setValue()
@@ -122,6 +139,7 @@ describe('SetupView', () => {
     // Перезагрузка: новый store и роутер, то же хранилище.
     const { wrapper } = await mountView(storage)
 
+    expect(wrapper.get('[data-field="team-name"]').element.value).toBe('Наши')
     expect(wrapper.get('[data-field="opponent"]').element.value).toBe('Динамо')
     expect(wrapper.get('[data-field="serving-them"]').element.checked).toBe(true)
     expect(wrapper.get('[data-field="substitution-fivb"]').element.checked).toBe(true)
