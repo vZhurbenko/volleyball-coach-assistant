@@ -66,8 +66,6 @@ function resetMatch() {
 
 <template>
   <section class="screen">
-    <h1>Матч</h1>
-
     <template v-if="state">
       <MatchScoreboard
         :state="state"
@@ -75,18 +73,6 @@ function resetMatch() {
         :opponent="settings.opponent || 'Соперник'"
         @point="matchStore.addPoint"
       />
-
-      <div v-if="betweenSets" class="set-end" data-field="set-end">
-        <h2>Партия {{ state.setNumber }} завершена</h2>
-        <p>
-          Победитель: {{ setWinnerName }} · {{ currentSetScore.points.us }}:{{
-            currentSetScore.points.them
-          }}
-        </p>
-        <button type="button" data-action="next-set" @click="router.push({ name: 'lineup' })">
-          Дальше
-        </button>
-      </div>
 
       <div v-if="matchOver" class="set-end" data-field="match-end">
         <h2>Матч завершён</h2>
@@ -167,6 +153,33 @@ function resetMatch() {
         @close="substitutionOpen = false"
       />
 
+      <div v-if="betweenSets" class="set-end-backdrop" data-field="set-end">
+        <section
+          class="set-end-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="set-end-title"
+        >
+          <h2 id="set-end-title">Партия {{ state.setNumber }} завершена</h2>
+          <p>
+            Победитель: {{ setWinnerName }} · {{ currentSetScore.points.us }}:{{
+              currentSetScore.points.them
+            }}
+          </p>
+          <button type="button" data-action="next-set" @click="router.push({ name: 'set-result' })">
+            Дальше
+          </button>
+          <button
+            type="button"
+            class="button-secondary"
+            data-action="undo-set-point"
+            @click="matchStore.undo"
+          >
+            Отменить очко
+          </button>
+        </section>
+      </div>
+
       <div v-if="confirmingReset" class="reset-confirm" role="alert">
         <p>Сбросить матч и вернуться к расстановке?</p>
         <button type="button" data-action="confirm-reset" @click="resetMatch">Сбросить</button>
@@ -203,22 +216,57 @@ function resetMatch() {
   color: var(--color-muted);
 }
 
+.set-end-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(16 24 40 / 45%);
+}
+
+.set-end-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 30px rgb(16 24 40 / 25%);
+}
+
+.set-end-modal h2 {
+  font-size: 1.15rem;
+}
+
+.set-end-modal p {
+  color: var(--color-muted);
+}
+
+.set-end-modal .button-secondary {
+  width: 100%;
+}
+
 .court-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  padding: 4px;
-  border-radius: 12px;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 10px;
   background: #e5e9ef;
 }
 
 .court-switch__option {
-  min-height: 40px;
-  padding: 0 8px;
-  border-radius: 9px;
+  min-height: 34px;
+  padding: 0 6px;
+  border-radius: 7px;
   background: transparent;
   color: var(--color-muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 

@@ -51,6 +51,7 @@ function testRouter() {
     routes: [
       { path: '/', name: 'lineup', component: { template: '<div />' } },
       { path: '/match', name: 'match', component: { template: '<div />' } },
+      { path: '/set-result', name: 'set-result', component: { template: '<div />' } },
       { path: '/summary', name: 'summary', component: { template: '<div />' } },
     ],
   })
@@ -82,7 +83,7 @@ beforeEach(() => {
 })
 
 describe('MatchView scoreboard', () => {
-  it('renders the score and the point streaks from the journal', async () => {
+  it('renders the score from the journal', async () => {
     saveWith([SET_START, ...points(TEAMS.US, 2), ...points(TEAMS.THEM, 1)])
     const { wrapper } = await mountView()
 
@@ -90,8 +91,31 @@ describe('MatchView scoreboard', () => {
     expect(textOf(wrapper, 'points-them')).toBe('1')
     expect(textOf(wrapper, 'team-us')).toBe('Наши')
     expect(textOf(wrapper, 'team-them')).toBe('Динамо')
-    expect(textOf(wrapper, 'streaks')).toContain('Наши +2')
-    expect(textOf(wrapper, 'streaks')).toContain('Динамо +1')
+    expect(wrapper.find('[data-field="streaks"]').exists()).toBe(false)
+  })
+
+  it('renders no page heading', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    expect(wrapper.find('h1').exists()).toBe(false)
+  })
+
+  it('orders the score, the view switch, the court and the actions', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    const html = wrapper.html()
+    const markers = [
+      'aria-label="Счёт"',
+      'aria-label="Режим площадки"',
+      'aria-label="Расстановка на площадке"',
+      'data-action="open-substitution"',
+      'data-action="undo"',
+    ].map((marker) => html.indexOf(marker))
+
+    expect(markers.every((index) => index >= 0)).toBe(true)
+    expect(markers).toEqual([...markers].sort((a, b) => a - b))
   })
 
   it('shows the protocol court under the scoreboard', async () => {
@@ -382,7 +406,7 @@ describe('MatchView substitutions', () => {
 })
 
 describe('MatchView between sets', () => {
-  it('shows the finished set and goes to the lineup', async () => {
+  it('shows the finished set and goes to its result screen', async () => {
     saveWith([SET_START, ...points(TEAMS.US, 25)])
     const { wrapper, router } = await mountView()
 
@@ -391,10 +415,33 @@ describe('MatchView between sets', () => {
     expect(panel.text()).toContain('Наши')
     expect(panel.text()).toContain('25:0')
 
+    // Ход партии живёт на отдельном экране, а не в панели матча.
+    expect(wrapper.find('[data-field="point-log"]').exists()).toBe(false)
+
     await wrapper.get('[data-action="next-set"]').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.name).toBe('lineup')
+    expect(router.currentRoute.value.name).toBe('set-result')
+  })
+
+  it('shows the set result as a modal over the court', async () => {
+    saveWith([SET_START, ...points(TEAMS.US, 25)])
+    const { wrapper } = await mountView()
+
+    const modal = wrapper.get('[data-field="set-end"]')
+    expect(modal.find('[role="dialog"]').exists()).toBe(true)
+    expect(modal.text()).toContain('Партия 1 завершена')
+    expect(wrapper.find('[aria-label="Расстановка на площадке"]').exists()).toBe(true)
+  })
+
+  it('undoes the set-ending point from the modal', async () => {
+    saveWith([SET_START, ...points(TEAMS.US, 25)])
+    const { wrapper } = await mountView()
+
+    await wrapper.get('[data-action="undo-set-point"]').trigger('click')
+
+    expect(textOf(wrapper, 'points-us')).toBe('24')
+    expect(wrapper.find('[data-field="set-end"]').exists()).toBe(false)
   })
 
   it('hides the substitution action when the set is over', async () => {

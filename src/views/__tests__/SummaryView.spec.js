@@ -158,12 +158,16 @@ describe('SummaryView', () => {
     expect(wrapper.get('[data-total-player="zhurbenko"] [data-stat="point"]').text()).toBe('0')
   })
 
-  it('renders the point streaks', async () => {
+  it('renders the point log for every set', async () => {
     const { wrapper } = await mountView()
 
-    const streaks = wrapper.get('[data-field="streaks"]')
-    expect(streaks.text()).toMatch(/Наши \+\d/)
-    expect(streaks.text()).toMatch(/Динамо \+\d/)
+    const logs = wrapper.findAll('[data-field="point-log"]')
+    expect(logs).toHaveLength(4)
+    expect(logs[0].text()).toContain('Наши')
+    expect(logs[0].text()).toContain('Динамо')
+
+    // Мы всегда слева, даже если партию выиграл соперник.
+    expect(logs[1].text().indexOf('Наши')).toBeLessThan(logs[1].text().indexOf('Динамо'))
   })
 
   it('marks the exceptional substitutions and the retired players', async () => {
