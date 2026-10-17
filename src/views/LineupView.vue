@@ -168,15 +168,15 @@ function startNextSet() {
     >
       Далее
     </button>
-  </section>
 
-  <LineupPlayerDialog
-    v-if="pickingZone !== null"
-    :zone="pickingZone"
-    :players="roster"
-    @assign="assign"
-    @cancel="pickingZone = null"
-  />
+    <LineupPlayerDialog
+      v-if="pickingZone !== null"
+      :zone="pickingZone"
+      :players="roster"
+      @assign="assign"
+      @cancel="pickingZone = null"
+    />
+  </section>
 </template>
 
 <style scoped>
