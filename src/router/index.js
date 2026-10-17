@@ -46,6 +46,7 @@ export function createAppRouter({
         name: 'match',
         component: MatchView,
         beforeEnter: guards.requireMatch,
+        props: { storage },
       },
       {
         path: '/summary',
