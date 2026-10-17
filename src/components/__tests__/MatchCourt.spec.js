@@ -52,12 +52,15 @@ describe('MatchCourt in protocol mode', () => {
     expect(playerIn(wrapper, 6)).toBe('komissarov')
   })
 
-  it('shows the game number and the role in the circle', () => {
+  it('shows the number, the last name and the role in the circle', () => {
     const wrapper = mountCourt([START_US])
 
     const circle = wrapper.get('[data-zone="1"]')
-    expect(circle.text()).toContain('2')
-    expect(circle.text()).toContain('Диагональный')
+    expect(circle.findAll('span').map((span) => span.text())).toEqual([
+      '2',
+      'Титов',
+      'Диагональный',
+    ])
   })
 
   it('places the protocol circles by their zones', () => {

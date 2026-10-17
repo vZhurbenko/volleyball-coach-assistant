@@ -95,6 +95,7 @@ const cells = computed(() =>
         @click="$emit('select', cell.player.id)"
       >
         <span class="court__number">{{ cell.player.number }}</span>
+        <span class="court__name">{{ cell.player.lastName }}</span>
         <span class="court__role">{{ ROLE_LABELS[cell.role] }}</span>
       </button>
     </div>
@@ -159,8 +160,8 @@ const cells = computed(() =>
   align-items: center;
   justify-content: center;
   gap: 1px;
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   min-width: 0;
   min-height: 0;
   padding: 0;
@@ -181,27 +182,46 @@ const cells = computed(() =>
   line-height: 1;
 }
 
+.court__name {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .court__role {
-  max-width: 66px;
+  max-width: 100%;
+  overflow: hidden;
   color: var(--color-muted);
-  font-size: 0.625rem;
+  font-size: 0.5rem;
   line-height: 1.1;
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (min-width: 600px) {
   .court-half__player {
-    width: 84px;
-    height: 84px;
+    width: 92px;
+    height: 92px;
   }
 
   .court__number {
     font-size: 1.8rem;
   }
 
+  .court__name {
+    font-size: 0.68rem;
+  }
+
   .court__role {
-    max-width: 84px;
-    font-size: 0.75rem;
+    font-size: 0.62rem;
   }
 }
 
