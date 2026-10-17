@@ -33,7 +33,13 @@ function saveWith(events, settings = {}) {
   saveMatch(
     {
       events,
-      settings: { opponent: 'Динамо', lineup: LINEUP, serving: TEAMS.US, ...settings },
+      settings: {
+        teamName: 'Наши',
+        opponent: 'Динамо',
+        lineup: LINEUP,
+        serving: TEAMS.US,
+        ...settings,
+      },
     },
     storage,
   )
@@ -81,8 +87,9 @@ describe('MatchView scoreboard', () => {
 
     expect(textOf(wrapper, 'points-us')).toBe('2')
     expect(textOf(wrapper, 'points-them')).toBe('1')
+    expect(textOf(wrapper, 'team-us')).toBe('Наши')
     expect(textOf(wrapper, 'team-them')).toBe('Динамо')
-    expect(textOf(wrapper, 'streaks')).toContain('Мы +2')
+    expect(textOf(wrapper, 'streaks')).toContain('Наши +2')
     expect(textOf(wrapper, 'streaks')).toContain('Динамо +1')
   })
 

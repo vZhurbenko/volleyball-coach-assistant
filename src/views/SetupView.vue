@@ -20,13 +20,15 @@ const lineupStore = useLineupStore()
 const { lineup } = storeToRefs(lineupStore)
 
 const saved = loadMatch(props.storage)
+const teamName = ref(saved?.settings?.teamName ?? '')
 const opponent = ref(saved?.settings?.opponent ?? '')
 const serving = ref(saved?.settings?.serving ?? TEAMS.US)
 const substitutionMode = ref(saved?.settings?.substitutionMode ?? SUBSTITUTION_MODES.COUNT)
 
 function startGame() {
+  const team = teamName.value.trim()
   const opponentName = opponent.value.trim()
-  if (!opponentName) return
+  if (!team || !opponentName) return
 
   saveMatch(
     {
@@ -38,6 +40,7 @@ function startGame() {
         },
       ],
       settings: {
+        teamName: team,
         opponent: opponentName,
         lineup: lineup.value,
         serving: serving.value,
@@ -56,6 +59,18 @@ function startGame() {
     <h1>Настройка игры</h1>
 
     <form class="setup-form" @submit.prevent="startGame">
+      <div class="field">
+        <label class="field__label" for="setup-team-name">Наша команда</label>
+        <input
+          id="setup-team-name"
+          v-model="teamName"
+          data-field="team-name"
+          type="text"
+          autocomplete="off"
+          placeholder="Название команды"
+        />
+      </div>
+
       <div class="field">
         <label class="field__label" for="setup-opponent">Команда соперника</label>
         <input
@@ -106,7 +121,12 @@ function startGame() {
         FIVB.
       </p>
 
-      <button type="submit" class="button-block" :disabled="!opponent.trim()" data-action="start">
+      <button
+        type="submit"
+        class="button-block"
+        :disabled="!teamName.trim() || !opponent.trim()"
+        data-action="start"
+      >
         Начать игру
       </button>
     </form>

@@ -5,6 +5,7 @@ import { TEAMS, currentSet, pointsToWin, setsWon } from '../domain/score.js'
 
 const props = defineProps({
   state: { type: Object, required: true },
+  teamName: { type: String, default: 'Мы' },
   opponent: { type: String, default: 'Соперник' },
 })
 
@@ -17,7 +18,9 @@ const serving = computed(() => props.state.score.serving)
 const streaks = computed(() =>
   props.state.streaks
     .filter((streak) => streak.setNumber === set.value.number)
-    .map((streak) => `${streak.team === TEAMS.US ? 'Мы' : props.opponent} +${streak.points}`),
+    .map(
+      (streak) => `${streak.team === TEAMS.US ? props.teamName : props.opponent} +${streak.points}`,
+    ),
 )
 
 const streakText = computed(() =>
@@ -41,7 +44,7 @@ const streakText = computed(() =>
         aria-label="Очко нам"
         @click="$emit('point', TEAMS.US)"
       >
-        <span class="scoreboard__team">Мы</span>
+        <span class="scoreboard__team" data-field="team-us">{{ teamName }}</span>
         <span class="scoreboard__points" data-field="points-us">{{ set.points.us }}</span>
         <span class="scoreboard__serve" data-field="serve-us">{{
           serving === TEAMS.US ? 'подача' : ''
