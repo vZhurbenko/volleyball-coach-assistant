@@ -155,6 +155,18 @@ textarea {
   color: var(--color-text);
 }
 
+input[type='radio'],
+input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--color-primary);
+}
+
 /* Планшет: просторнее поля, крупнее заголовки. */
 @media (min-width: 600px) {
   :root {
