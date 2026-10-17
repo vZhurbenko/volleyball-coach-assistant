@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import { mount } from '@vue/test-utils'
 
+import { ROLES } from '../../domain/constants.js'
 import { defaultLineup } from '../../domain/lineup.js'
 import { EVENT_TYPES, matchState } from '../../domain/match.js'
 import { TEAM_ROSTER } from '../../domain/players.js'
@@ -12,10 +13,27 @@ const LINEUP = defaultLineup(TEAM_ROSTER)
 const START_US = { type: EVENT_TYPES.SET_START, lineup: LINEUP, serving: TEAMS.US }
 const START_THEM = { type: EVENT_TYPES.SET_START, lineup: LINEUP, serving: TEAMS.THEM }
 
-function mountCourt(events) {
+const LIBERO = {
+  id: 'test-libero',
+  firstName: 'Илья',
+  lastName: 'Тестов',
+  number: 99,
+  role: ROLES.LIBERO,
+}
+const ROSTER_WITH_LIBERO = [...TEAM_ROSTER, LIBERO]
+const LINEUP_WITH_LIBERO = {
+  ...defaultLineup(ROSTER_WITH_LIBERO),
+  liberoId: LIBERO.id,
+}
+
+function mountCourt(events, { mode = 'protocol', roster = TEAM_ROSTER } = {}) {
   return mount(MatchCourt, {
-    props: { state: matchState(events), roster: TEAM_ROSTER },
+    props: { state: matchState(events), roster, mode },
   })
+}
+
+function gamePlayer(wrapper, playerId) {
+  return wrapper.get(`[data-game-player="${playerId}"]`)
 }
 
 function playerIn(wrapper, zone) {
@@ -64,5 +82,62 @@ describe('MatchCourt in protocol mode', () => {
     await wrapper.get('[data-zone="4"]').trigger('click')
 
     expect(wrapper.emitted('select')).toEqual([['panchishkina']])
+  })
+})
+
+describe('MatchCourt in game mode', () => {
+  it('places the six by the reception coordinates', () => {
+    const wrapper = mountCourt([START_US], { mode: 'game' })
+
+    expect(wrapper.findAll('[data-game-player]')).toHaveLength(6)
+
+    const opposite = gamePlayer(wrapper, 'titov')
+    expect(opposite.attributes('data-zone')).toBe('1')
+    expect(opposite.attributes('data-x')).toBe('94')
+    expect(opposite.attributes('data-y')).toBe('94')
+
+    const setter = gamePlayer(wrapper, 'panchishkina')
+    expect(setter.attributes('data-zone')).toBe('4')
+    expect(setter.attributes('data-x')).toBe('6')
+    expect(setter.attributes('data-y')).toBe('6')
+  })
+
+  it('updates the positions when the six rotates', () => {
+    // Переход подачи сдвигает связку из зоны 4 в зону 3 — берётся расстановка 3.
+    const wrapper = mountCourt([START_THEM, { type: EVENT_TYPES.POINT, team: TEAMS.US }], {
+      mode: 'game',
+    })
+
+    const player = gamePlayer(wrapper, 'verzhenovsky')
+    expect(player.attributes('data-zone')).toBe('1')
+    expect(player.attributes('data-x')).toBe('73')
+    expect(player.attributes('data-y')).toBe('73')
+  })
+
+  it('shows the libero in play and hides them while we serve', () => {
+    const receiving = mountCourt(
+      [{ type: EVENT_TYPES.SET_START, lineup: LINEUP_WITH_LIBERO, serving: TEAMS.THEM }],
+      { mode: 'game', roster: ROSTER_WITH_LIBERO },
+    )
+
+    expect(receiving.findAll('[data-game-player]')).toHaveLength(6)
+    expect(receiving.find('[data-game-player="test-libero"]').exists()).toBe(true)
+    expect(receiving.find('[data-game-player="komissarov"]').exists()).toBe(false)
+
+    const serving = mountCourt(
+      [{ type: EVENT_TYPES.SET_START, lineup: LINEUP_WITH_LIBERO, serving: TEAMS.US }],
+      { mode: 'game', roster: ROSTER_WITH_LIBERO },
+    )
+
+    expect(serving.find('[data-game-player="test-libero"]').exists()).toBe(false)
+    expect(serving.find('[data-game-player="komissarov"]').exists()).toBe(true)
+  })
+
+  it('emits the player id on tap', async () => {
+    const wrapper = mountCourt([START_US], { mode: 'game' })
+
+    await gamePlayer(wrapper, 'titov').trigger('click')
+
+    expect(wrapper.emitted('select')).toEqual([['titov']])
   })
 })

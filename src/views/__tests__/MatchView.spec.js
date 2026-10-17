@@ -101,6 +101,22 @@ describe('MatchView scoreboard', () => {
     expect(wrapper.get('[data-zone="1"]').attributes('data-player-id')).toBe('titov')
   })
 
+  it('switches the court between protocol and game modes', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    expect(wrapper.find('[data-game-player]').exists()).toBe(false)
+
+    await wrapper.get('[data-field="court-mode-game"]').trigger('click')
+
+    expect(wrapper.get('[data-game-player="titov"]').attributes('data-x')).toBe('94')
+
+    await wrapper.get('[data-field="court-mode-protocol"]').trigger('click')
+
+    expect(wrapper.find('[data-game-player]').exists()).toBe(false)
+    expect(wrapper.get('[data-zone="1"]').attributes('data-player-id')).toBe('titov')
+  })
+
   it('adds a point to the tapped side and saves it', async () => {
     saveWith([SET_START])
     const { wrapper } = await mountView()

@@ -2,12 +2,15 @@
 import { computed } from 'vue'
 
 import { ROLE_LABELS, ROLES } from '../domain/constants.js'
+import { receivingPositions } from '../domain/formations.js'
 import { playersOnCourt } from '../domain/match.js'
 import { findPlayer } from '../domain/players.js'
 
 const props = defineProps({
   state: { type: Object, required: true },
   roster: { type: Array, required: true },
+  /** `protocol` — по зонам протокола, `game` — реальные позиции приёма. */
+  mode: { type: String, default: 'protocol' },
 })
 
 defineEmits(['select'])
@@ -26,7 +29,7 @@ const lineupRoles = computed(() => {
   return roles
 })
 
-const cells = computed(() =>
+const protocolCells = computed(() =>
   COURT_ZONES.map((zone) => {
     const player = findPlayer(props.roster, onCourt.value[zone])
     const role = player ? (lineupRoles.value[player.id] ?? player.role) : null
@@ -34,11 +37,49 @@ const cells = computed(() =>
     return { zone, player, role, isLibero: role === ROLES.LIBERO }
   }),
 )
+
+/** Игровой режим: координаты приёма зависят от расстановки связки. */
+const gameCells = computed(() => {
+  const positions = receivingPositions({
+    lineup: props.state.lineup,
+    rotations: props.state.rotations,
+  })
+  if (!positions) return null
+
+  return protocolCells.value
+    .filter((cell) => cell.player)
+    .map((cell) => ({ ...cell, ...(positions[cell.zone] ?? { x: 50, y: 50 }) }))
+})
 </script>
 
 <template>
-  <div class="court" role="group" aria-label="Расстановка на площадке">
-    <div v-for="cell in cells" :key="cell.zone" class="court__cell">
+  <div
+    v-if="mode === 'game' && gameCells"
+    class="court-half"
+    role="group"
+    aria-label="Площадка в игровом режиме"
+  >
+    <button
+      v-for="cell in gameCells"
+      :key="cell.player.id"
+      type="button"
+      class="court-half__player"
+      :class="{ 'court-half__player--libero': cell.isLibero }"
+      :data-zone="cell.zone"
+      :data-game-player="cell.player.id"
+      :data-x="cell.x"
+      :data-y="cell.y"
+      :style="{ left: `${cell.x}%`, top: `${cell.y}%` }"
+      :aria-label="`Зона ${cell.zone}: ${cell.player.lastName}, ${ROLE_LABELS[cell.role]}`"
+      @click="$emit('select', cell.player.id)"
+    >
+      <span class="court__number">{{ cell.player.number }}</span>
+      <span class="court__role">{{ ROLE_LABELS[cell.role] }}</span>
+    </button>
+  </div>
+
+  <div v-else class="court" role="group" aria-label="Расстановка на площадке">
+    <div v-for="cell in protocolCells" :key="cell.zone" class="court__cell">
       <span class="court__zone-label">{{ cell.zone }}</span>
       <button
         v-if="cell.player"
@@ -58,6 +99,50 @@ const cells = computed(() =>
 </template>
 
 <style scoped>
+.court-half {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 16px 0 28px;
+  border-radius: 16px;
+  background: #e2a05f;
+  box-shadow: inset 0 0 0 3px rgb(255 255 255 / 55%);
+}
+
+.court-half::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: #fff;
+}
+
+.court-half__player {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 64px;
+  height: 64px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow);
+  transform: translate(-50%, -50%);
+}
+
+.court-half__player--libero {
+  border-color: var(--color-primary);
+}
+
 .court {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -140,6 +225,11 @@ const cells = computed(() =>
   .court__role {
     max-width: 84px;
     font-size: 0.75rem;
+  }
+
+  .court-half__player {
+    width: 84px;
+    height: 84px;
   }
 }
 </style>
