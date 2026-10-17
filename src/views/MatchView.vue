@@ -24,6 +24,7 @@ const { state, settings, canUndo, substitutionsLeft, substitutionMode } = storeT
 const confirmingReset = ref(false)
 const selectedPlayer = ref(null)
 const substitutionOpen = ref(false)
+const courtMode = ref('protocol')
 
 function openPlayer(playerId) {
   selectedPlayer.value = findPlayer(TEAM_ROSTER, playerId) ?? null
@@ -59,7 +60,30 @@ function resetMatch() {
         @point="matchStore.addPoint"
       />
 
-      <MatchCourt :state="state" :roster="TEAM_ROSTER" @select="openPlayer" />
+      <div class="court-switch" role="group" aria-label="Режим площадки">
+        <button
+          type="button"
+          class="court-switch__option"
+          :class="{ 'court-switch__option--active': courtMode === 'protocol' }"
+          :aria-pressed="courtMode === 'protocol'"
+          data-field="court-mode-protocol"
+          @click="courtMode = 'protocol'"
+        >
+          Протокольный
+        </button>
+        <button
+          type="button"
+          class="court-switch__option"
+          :class="{ 'court-switch__option--active': courtMode === 'game' }"
+          :aria-pressed="courtMode === 'game'"
+          data-field="court-mode-game"
+          @click="courtMode = 'game'"
+        >
+          Игровой (приём)
+        </button>
+      </div>
+
+      <MatchCourt :state="state" :roster="TEAM_ROSTER" :mode="courtMode" @select="openPlayer" />
 
       <button
         type="button"
@@ -125,6 +149,31 @@ function resetMatch() {
 </template>
 
 <style scoped>
+.court-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #e5e9ef;
+}
+
+.court-switch__option {
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.court-switch__option--active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow);
+}
+
 .match-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
