@@ -49,6 +49,25 @@ export function defaultLineup(roster) {
 }
 
 /**
+ * Игроки, которых можно предложить для зоны: все, кроме уже занятых в других
+ * зонах. Игрок из этой же зоны остаётся в списке — ему можно сменить роль.
+ *
+ * @param {Lineup} lineup
+ * @param {import('./players.js').Player[]} roster
+ * @param {number} zone
+ * @returns {import('./players.js').Player[]}
+ */
+export function availablePlayersForZone(lineup, roster, zone) {
+  const taken = new Set(
+    ZONES.filter((other) => other !== zone)
+      .map((other) => lineup.zones[other]?.playerId)
+      .filter(Boolean),
+  )
+
+  return roster.filter((player) => !taken.has(player.id))
+}
+
+/**
  * Проверяет стартовую расстановку по правилам из docs/requirements.md.
  *
  * @param {Lineup} lineup
