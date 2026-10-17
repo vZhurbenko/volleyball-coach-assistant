@@ -58,7 +58,7 @@ function startGame() {
   <section class="screen">
     <h1>Настройка игры</h1>
 
-    <form class="setup-form" @submit.prevent="startGame">
+    <form class="setup-form board board--pad" @submit.prevent="startGame">
       <div class="field">
         <label class="field__label" for="setup-team-name">Наша команда</label>
         <input
@@ -83,43 +83,47 @@ function startGame() {
         />
       </div>
 
-      <fieldset class="field field--choice">
+      <fieldset class="field">
         <legend class="field__label">Кто подаёт первым</legend>
-        <label class="choice">
-          <input v-model="serving" type="radio" :value="TEAMS.US" data-field="serving-us" />
-          Мы
-        </label>
-        <label class="choice">
-          <input v-model="serving" type="radio" :value="TEAMS.THEM" data-field="serving-them" />
-          Соперник
-        </label>
+        <div class="segmented">
+          <label class="segmented__option">
+            <input v-model="serving" type="radio" :value="TEAMS.US" data-field="serving-us" />
+            Мы
+          </label>
+          <label class="segmented__option">
+            <input v-model="serving" type="radio" :value="TEAMS.THEM" data-field="serving-them" />
+            Соперник
+          </label>
+        </div>
       </fieldset>
 
-      <fieldset class="field field--choice">
+      <fieldset class="field">
         <legend class="field__label">Правила замен</legend>
-        <label class="choice">
-          <input
-            v-model="substitutionMode"
-            type="radio"
-            :value="SUBSTITUTION_MODES.COUNT"
-            data-field="substitution-count"
-          />
-          Только количество
-        </label>
-        <label class="choice">
-          <input
-            v-model="substitutionMode"
-            type="radio"
-            :value="SUBSTITUTION_MODES.FIVB"
-            data-field="substitution-fivb"
-          />
-          По правилам FIVB
-        </label>
+        <div class="segmented">
+          <label class="segmented__option">
+            <input
+              v-model="substitutionMode"
+              type="radio"
+              :value="SUBSTITUTION_MODES.COUNT"
+              data-field="substitution-count"
+            />
+            Только количество
+          </label>
+          <label class="segmented__option">
+            <input
+              v-model="substitutionMode"
+              type="radio"
+              :value="SUBSTITUTION_MODES.FIVB"
+              data-field="substitution-fivb"
+            />
+            По правилам FIVB
+          </label>
+        </div>
+        <p class="hint">
+          В упрощённом режиме проверяется только лимит. Замены либеро в обоих режимах — по правилам
+          FIVB.
+        </p>
       </fieldset>
-      <p class="hint">
-        В упрощённом режиме проверяется только лимит. Замены либеро в обоих режимах — по правилам
-        FIVB.
-      </p>
 
       <button
         type="submit"
@@ -137,48 +141,34 @@ function startGame() {
 .setup-form {
   display: flex;
   flex-direction: column;
-  gap: var(--gap);
+  gap: 20px;
+  padding: 16px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 0;
   border: 0;
 }
 
 .field__label {
-  font-weight: 600;
+  padding: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .field input[type='text'] {
   width: 100%;
 }
 
-.field--choice {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 20px;
-}
-
-.field--choice legend {
-  width: 100%;
-  padding: 0;
-}
-
-.choice {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: var(--tap-size);
-  font-weight: 500;
-}
-
 .hint {
-  color: var(--color-muted);
-  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .button-block {

@@ -6,18 +6,41 @@
 }
 
 :root {
-  --color-bg: #f2f4f7;
-  --color-surface: #ffffff;
-  --color-text: #1c2430;
-  --color-muted: #5b6673;
-  --color-primary: #1f5fbf;
+  /* Бумага и ink */
+  --paper: #eef1f4;
+  --surface: #ffffff;
+  --ink: #17222e;
+  --ink-soft: #586675;
+  --line: #d5dce4;
+  --line-strong: #b9c4cf;
+
+  /* Прежние имена, которыми пользуются компоненты */
+  --color-bg: var(--paper);
+  --color-surface: var(--surface);
+  --color-text: var(--ink);
+  --color-muted: var(--ink-soft);
+  --color-primary: #2563eb;
   --color-primary-ink: #ffffff;
-  --color-focus: #7aa7ef;
+  --color-focus: #2563eb;
+
+  /* Команды, поле, ошибки */
+  --us: #3b82f6;
+  --us-deep: #2563eb;
+  --them: #ef4444;
+  --them-deep: #dc2626;
+  --court: #dfa05f;
+  --court-deep: #b97a3e;
+  --danger: #b42318;
+  --danger-bg: #fdecea;
+
+  /* Форма и ритм */
   --radius: 12px;
+  --radius-sm: 8px;
   --gap: 16px;
   --page-pad: 16px;
   --tap-size: 48px;
-  --shadow: 0 1px 3px rgb(16 24 40 / 12%);
+  --shadow: 0 1px 3px rgb(16 24 40 / 10%);
+  --shadow-modal: 0 12px 32px rgb(16 24 40 / 22%);
 
   color-scheme: light;
 }
@@ -29,14 +52,15 @@ html {
 body {
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--paper);
+  color: var(--ink);
   font-family:
     system-ui,
     -apple-system,
     'Segoe UI',
     Roboto,
     sans-serif;
+  font-variant-numeric: tabular-nums;
   line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
 }
@@ -66,8 +90,39 @@ body {
 }
 
 h1 {
-  font-size: clamp(1.5rem, 5vw, 2rem);
-  line-height: 1.2;
+  font-size: clamp(1.35rem, 4.5vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+p {
+  color: var(--ink-soft);
+}
+
+.label {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+/* Спокойная панель: линейка вместо мягкой тени. */
+.board {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.board--pad {
+  padding: 16px;
 }
 
 /* Переход между экранами: короткий fade со сдвигом. */
@@ -88,17 +143,6 @@ h1 {
   transform: translateY(-4px);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .screen-enter-active,
-  .screen-leave-active {
-    transition: none;
-  }
-}
-
-p {
-  color: var(--color-muted);
-}
-
 button,
 input,
 select,
@@ -109,14 +153,18 @@ textarea {
 button {
   min-width: var(--tap-size);
   min-height: var(--tap-size);
-  padding: 0 20px;
-  border: 0;
-  border-radius: var(--radius);
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   background: var(--color-primary);
   color: var(--color-primary-ink);
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
   touch-action: manipulation;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.06s ease;
 }
 
 button:active {
@@ -124,7 +172,7 @@ button:active {
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -133,9 +181,15 @@ button:disabled:active {
 }
 
 .button-secondary {
-  border: 1px solid var(--color-primary);
+  border: 1.5px solid var(--line-strong);
   background: transparent;
-  color: var(--color-primary);
+  color: var(--ink);
+}
+
+.button-danger {
+  border: 1.5px solid #e3b7b2;
+  background: transparent;
+  color: var(--danger);
 }
 
 button:focus-visible,
@@ -151,10 +205,18 @@ select,
 textarea {
   min-height: var(--tap-size);
   padding: 0 12px;
-  border: 1px solid #c7ced8;
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  color: var(--color-text);
+  border: 1.5px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 14%);
 }
 
 input[type='radio'],
@@ -169,7 +231,58 @@ input[type='checkbox'] {
   accent-color: var(--color-primary);
 }
 
-/* Планшет: просторнее поля, крупнее заголовки. */
+/* Сегментированный выбор: радио внутри подписей, как на пульте. */
+.segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #e7ebf0;
+}
+
+.segmented--compact .segmented__option {
+  min-height: 34px;
+  font-size: 0.82rem;
+}
+
+.segmented__option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-align: center;
+  cursor: pointer;
+}
+
+.segmented__option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented__option:has(input:checked) {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.segmented__option:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Планшет: просторнее поля. */
 @media (min-width: 600px) {
   :root {
     --page-pad: 24px;
@@ -181,6 +294,17 @@ input[type='checkbox'] {
 @media (min-width: 1024px) {
   .screen {
     max-width: 1120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-enter-active,
+  .screen-leave-active {
+    transition: none;
+  }
+
+  button {
+    transition: none;
   }
 }
 
@@ -200,6 +324,10 @@ input[type='checkbox'] {
     padding: 0;
   }
 
+  .board {
+    border-color: #999;
+  }
+
   h1,
   h2,
   h3 {
@@ -213,12 +341,12 @@ input[type='checkbox'] {
 
   .table-wrap,
   .point-log__scroll {
-    max-height: none;
-    overflow: visible;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .stats-table th,
   .stats-table td {
-    border: 1px solid #666;
+    border: 1px solid #666 !important;
   }
 }

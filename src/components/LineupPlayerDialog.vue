@@ -59,12 +59,7 @@ function assign(role) {
             {{ ROLE_LABELS[role] }}
           </button>
         </div>
-        <button
-          type="button"
-          class="button-secondary"
-          data-action="back"
-          @click="selected = null"
-        >
+        <button type="button" class="button-secondary" data-action="back" @click="selected = null">
           Назад
         </button>
       </template>
@@ -97,18 +92,21 @@ function assign(role) {
   max-height: 85vh;
   max-height: 85dvh;
   overflow-y: auto;
-  padding: 20px;
+  padding: 18px;
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: var(--color-surface);
-  box-shadow: 0 10px 30px rgb(16 24 40 / 25%);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
 }
 
 .dialog h2 {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
+  font-weight: 750;
 }
 
 .dialog__hint {
-  font-size: 0.9rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
 }
 
 .dialog .button-secondary {
@@ -118,33 +116,44 @@ function assign(role) {
 .player-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
   list-style: none;
+}
+
+.player-list li + li {
+  border-top: 1px solid var(--line);
 }
 
 .player-list__item {
   display: grid;
-  grid-template-columns: 40px 1fr auto;
+  grid-template-columns: 36px 1fr auto;
   align-items: center;
   gap: 10px;
   width: 100%;
   min-height: var(--tap-size);
   padding: 6px 12px;
-  border: 1px solid #d7dde5;
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-text);
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
   text-align: left;
 }
 
 .player-list__number {
-  font-weight: 700;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-list__name {
+  font-weight: 600;
 }
 
 .player-list__role {
-  color: var(--color-muted);
-  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
 }
 
 .role-list {
@@ -154,9 +163,11 @@ function assign(role) {
 }
 
 .role-list__item {
-  border: 1px solid #d7dde5;
-  background: var(--color-surface);
-  color: var(--color-text);
+  border: 1.5px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 650;
 }
 
 .role-list__item--current {
