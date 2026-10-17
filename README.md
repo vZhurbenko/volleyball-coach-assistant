@@ -7,6 +7,8 @@
 Данные хранятся локально в браузере — у каждого, кто откроет ссылку, свои.
 Обмен результатами — печатью итогового экрана средствами браузера.
 
+**Приложение:** <https://volleyhelper.vzhurbenko.com/>
+
 ## Статус
 
 План работ — [issues майлстоуна «MVP»](https://github.com/vZhurbenko/volleyball-coach-assistant/milestone/1):
