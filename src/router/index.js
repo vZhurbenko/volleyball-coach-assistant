@@ -29,6 +29,14 @@ export function createAppRouter({
 
   return createRouter({
     history,
+    /**
+     * Каждый новый экран открывается сверху. Иначе после длинного журнала
+     * партии расстановка появляется прокрученной вниз — кажется, что не
+     * загрузилась. Назад/вперёд возвращают сохранённую позицию.
+     */
+    scrollBehavior(to, from, savedPosition) {
+      return savedPosition ?? { top: 0 }
+    },
     routes: [
       {
         path: '/',

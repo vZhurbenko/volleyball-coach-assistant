@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 
 import { defaultLineup } from '../../domain/lineup.js'
@@ -45,6 +45,12 @@ async function startAt(path) {
 beforeEach(() => {
   storage = fakeStorage()
   clearMatch(storage)
+  // jsdom не умеет прокручивать окно; подменяем, чтобы переходы не шумели.
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('routes', () => {
@@ -56,6 +62,17 @@ describe('routes', () => {
     expect(router.resolve('/match').name).toBe('match')
     expect(router.resolve('/set-result').name).toBe('set-result')
     expect(router.resolve('/summary').name).toBe('summary')
+  })
+})
+
+describe('scroll position', () => {
+  it('opens a new screen at the top, not where the previous one was scrolled', async () => {
+    const router = createAppRouter({ history: createMemoryHistory(), storage })
+    await router.push('/setup')
+    await router.isReady()
+    await router.push('/set-result')
+
+    expect(window.scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 0 }))
   })
 })
 
