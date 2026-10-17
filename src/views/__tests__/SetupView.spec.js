@@ -67,6 +67,13 @@ describe('SetupView', () => {
     expect(wrapper.get('[data-field="serving-them"]').element.checked).toBe(false)
   })
 
+  it('offers the count-only substitution rules by default', async () => {
+    const { wrapper } = await mountView(storage)
+
+    expect(wrapper.get('[data-field="substitution-count"]').element.checked).toBe(true)
+    expect(wrapper.get('[data-field="substitution-fivb"]').element.checked).toBe(false)
+  })
+
   it('does not start the game without an opponent', async () => {
     const { wrapper, router } = await mountView(storage)
     await wrapper.get('[data-field="opponent"]').setValue('   ')
@@ -93,6 +100,7 @@ describe('SetupView', () => {
     const saved = loadMatch(storage)
     expect(saved.settings.opponent).toBe('Динамо')
     expect(saved.settings.serving).toBe(TEAMS.THEM)
+    expect(saved.settings.substitutionMode).toBe('count')
     expect(saved.settings.lineup).toEqual(defaultLineup(TEAM_ROSTER))
 
     expect(saved.events).toHaveLength(1)
@@ -107,6 +115,7 @@ describe('SetupView', () => {
     const first = await mountView(storage)
     await first.wrapper.get('[data-field="opponent"]').setValue('Динамо')
     await first.wrapper.get('[data-field="serving-them"]').setValue()
+    await first.wrapper.get('[data-field="substitution-fivb"]').setValue()
     await first.wrapper.get('form').trigger('submit')
     await flushPromises()
 
@@ -115,5 +124,6 @@ describe('SetupView', () => {
 
     expect(wrapper.get('[data-field="opponent"]').element.value).toBe('Динамо')
     expect(wrapper.get('[data-field="serving-them"]').element.checked).toBe(true)
+    expect(wrapper.get('[data-field="substitution-fivb"]').element.checked).toBe(true)
   })
 })

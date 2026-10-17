@@ -29,9 +29,12 @@ function points(team, count) {
   return Array.from({ length: count }, () => ({ type: EVENT_TYPES.POINT, team }))
 }
 
-function saveWith(events) {
+function saveWith(events, settings = {}) {
   saveMatch(
-    { events, settings: { opponent: 'Динамо', lineup: LINEUP, serving: TEAMS.US } },
+    {
+      events,
+      settings: { opponent: 'Динамо', lineup: LINEUP, serving: TEAMS.US, ...settings },
+    },
     storage,
   )
 }
@@ -220,10 +223,7 @@ describe('MatchView player stats menu', () => {
     await openMenu(wrapper)
     await wrapper.get(`[data-stat="${STAT_TYPES.SERVE}"]`).trigger('click')
 
-    const counters = countersForPlayer(
-      matchState(loadMatch(storage).events).stats,
-      'titov',
-    )
+    const counters = countersForPlayer(matchState(loadMatch(storage).events).stats, 'titov')
     expect(counters.serve).toBe(2)
   })
 
@@ -236,5 +236,123 @@ describe('MatchView player stats menu', () => {
 
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
     expect(loadMatch(storage).events).toHaveLength(1)
+  })
+})
+
+describe('MatchView substitutions', () => {
+  async function openSubstitutions(wrapper) {
+    await wrapper.get('[data-action="open-substitution"]').trigger('click')
+  }
+
+  async function selectPair(wrapper, outgoingId, incomingId) {
+    await wrapper.get(`[data-sub-out="${outgoingId}"]`).trigger('click')
+    await wrapper.get(`[data-sub-in="${incomingId}"]`).trigger('click')
+  }
+
+  it('makes a legal substitution and moves the player onto the court', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    await openSubstitutions(wrapper)
+    expect(wrapper.get('[data-field="substitutions-left"]').text()).toContain('6')
+
+    await selectPair(wrapper, 'titov', 'gorobchenko')
+    await wrapper.get('[data-action="confirm-substitution"]').trigger('click')
+
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(wrapper.get('[data-zone="1"]').attributes('data-player-id')).toBe('gorobchenko')
+    expect(loadMatch(storage).events.at(-1)).toEqual({
+      type: EVENT_TYPES.SUBSTITUTION,
+      outgoingId: 'titov',
+      incomingId: 'gorobchenko',
+      exceptional: false,
+      mode: 'fivb',
+    })
+
+    await openSubstitutions(wrapper)
+    expect(wrapper.get('[data-field="substitutions-left"]').text()).toContain('5')
+  })
+
+  it('blocks an illegal substitution and explains why', async () => {
+    saveWith([
+      SET_START,
+      { type: EVENT_TYPES.SUBSTITUTION, outgoingId: 'titov', incomingId: 'gorobchenko' },
+    ])
+    const { wrapper } = await mountView()
+    const before = loadMatch(storage).events.length
+
+    await openSubstitutions(wrapper)
+    // В слот 1 уже вышел запасной; вернуться туда может только Титов.
+    await selectPair(wrapper, 'gorobchenko', 'emelyanov')
+
+    expect(wrapper.get('[data-field="substitution-reason"]').text()).toContain('только стартовый')
+    const confirm = wrapper.get('[data-action="confirm-substitution"]')
+    expect(confirm.attributes('disabled')).toBeDefined()
+    await confirm.trigger('click')
+
+    expect(loadMatch(storage).events).toHaveLength(before)
+    expect(wrapper.get('[data-zone="1"]').attributes('data-player-id')).toBe('gorobchenko')
+  })
+
+  it('makes an exceptional substitution and retires the outgoing player', async () => {
+    saveWith([
+      SET_START,
+      { type: EVENT_TYPES.SUBSTITUTION, outgoingId: 'titov', incomingId: 'gorobchenko' },
+    ])
+    const { wrapper } = await mountView()
+
+    await openSubstitutions(wrapper)
+    await selectPair(wrapper, 'gorobchenko', 'emelyanov')
+    expect(wrapper.find('[data-field="substitution-reason"]').exists()).toBe(true)
+
+    await wrapper.get('[data-field="exceptional"]').setValue(true)
+
+    expect(wrapper.find('[data-field="substitution-reason"]').exists()).toBe(false)
+    await wrapper.get('[data-action="confirm-substitution"]').trigger('click')
+
+    expect(wrapper.get('[data-zone="1"]').attributes('data-player-id')).toBe('emelyanov')
+
+    const state = matchState(loadMatch(storage).events)
+    expect(state.substitutions.retired).toContain('gorobchenko')
+    expect(loadMatch(storage).events.at(-1)).toEqual({
+      type: EVENT_TYPES.SUBSTITUTION,
+      outgoingId: 'gorobchenko',
+      incomingId: 'emelyanov',
+      exceptional: true,
+      mode: 'fivb',
+    })
+
+    // Исключительная замена лимит не расходует.
+    await openSubstitutions(wrapper)
+    expect(wrapper.get('[data-field="substitutions-left"]').text()).toContain('5')
+  })
+
+  it('ignores the pair rules in count-only mode', async () => {
+    saveWith(
+      [
+        SET_START,
+        { type: EVENT_TYPES.SUBSTITUTION, outgoingId: 'titov', incomingId: 'gorobchenko' },
+      ],
+      { substitutionMode: 'count' },
+    )
+    const { wrapper } = await mountView()
+
+    await openSubstitutions(wrapper)
+    expect(wrapper.find('[data-field="exceptional"]').exists()).toBe(false)
+
+    // В FIVB так нельзя: вернуться на позицию может только Титов.
+    await selectPair(wrapper, 'gorobchenko', 'emelyanov')
+    expect(wrapper.find('[data-field="substitution-reason"]').exists()).toBe(false)
+
+    await wrapper.get('[data-action="confirm-substitution"]').trigger('click')
+
+    expect(wrapper.get('[data-zone="1"]').attributes('data-player-id')).toBe('emelyanov')
+    expect(loadMatch(storage).events.at(-1)).toEqual({
+      type: EVENT_TYPES.SUBSTITUTION,
+      outgoingId: 'gorobchenko',
+      incomingId: 'emelyanov',
+      exceptional: false,
+      mode: 'count',
+    })
   })
 })

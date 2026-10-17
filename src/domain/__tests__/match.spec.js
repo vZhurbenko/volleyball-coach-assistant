@@ -114,6 +114,17 @@ describe('matchState', () => {
     expect(playersOnCourt(state)[3]).toBe('morozov')
   })
 
+  it('applies a count-mode substitution without the pair rules', () => {
+    const state = matchState([
+      setStart(),
+      { ...substitution('morozov', 'tikhonov'), mode: 'count' },
+      { ...substitution('tikhonov', 'gusev'), mode: 'count' },
+    ])
+
+    expect(playersOnCourt(state)[3]).toBe('gusev')
+    expect(state.substitutions.used).toBe(2)
+  })
+
   it('moves the substitute with the rotation', () => {
     const state = matchState([
       setStart(TEAMS.THEM),

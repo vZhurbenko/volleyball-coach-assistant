@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 import MatchCourt from '../components/MatchCourt.vue'
 import MatchPlayerMenu from '../components/MatchPlayerMenu.vue'
 import MatchScoreboard from '../components/MatchScoreboard.vue'
+import MatchSubstitutionDialog from '../components/MatchSubstitutionDialog.vue'
 import { TEAM_ROSTER, findPlayer } from '../domain/players.js'
 import { useMatchStore } from '../stores/match.js'
 
@@ -19,9 +20,10 @@ const router = useRouter()
 const matchStore = useMatchStore()
 matchStore.load(props.storage)
 
-const { state, settings, canUndo } = storeToRefs(matchStore)
+const { state, settings, canUndo, substitutionsLeft, substitutionMode } = storeToRefs(matchStore)
 const confirmingReset = ref(false)
 const selectedPlayer = ref(null)
+const substitutionOpen = ref(false)
 
 function openPlayer(playerId) {
   selectedPlayer.value = findPlayer(TEAM_ROSTER, playerId) ?? null
@@ -32,6 +34,11 @@ function recordStat(statType) {
 
   matchStore.addStat(selectedPlayer.value.id, statType)
   selectedPlayer.value = null
+}
+
+function applySubstitution(request) {
+  const result = matchStore.addSubstitution(request)
+  if (result.ok) substitutionOpen.value = false
 }
 
 function resetMatch() {
@@ -52,6 +59,15 @@ function resetMatch() {
       />
 
       <MatchCourt :state="state" :roster="TEAM_ROSTER" @select="openPlayer" />
+
+      <button
+        type="button"
+        class="button-block"
+        data-action="open-substitution"
+        @click="substitutionOpen = true"
+      >
+        Замена · осталось {{ substitutionsLeft }}
+      </button>
 
       <div class="match-actions">
         <button
@@ -78,6 +94,15 @@ function resetMatch() {
         :player="selectedPlayer"
         @stat="recordStat"
         @close="selectedPlayer = null"
+      />
+
+      <MatchSubstitutionDialog
+        v-if="substitutionOpen"
+        :state="state"
+        :roster="TEAM_ROSTER"
+        :mode="substitutionMode"
+        @substitute="applySubstitution"
+        @close="substitutionOpen = false"
       />
 
       <div v-if="confirmingReset" class="reset-confirm" role="alert">

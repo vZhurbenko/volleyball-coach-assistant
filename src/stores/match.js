@@ -3,6 +3,11 @@ import { defineStore } from 'pinia'
 
 import { EVENT_TYPES, matchState, undoLastPoint } from '../domain/match.js'
 import { currentSet, isMatchOver, isSetOver } from '../domain/score.js'
+import {
+  SUBSTITUTION_MODES,
+  substitute,
+  substitutionsLeft as countSubstitutionsLeft,
+} from '../domain/substitutions.js'
 import { clearMatch, loadMatch, saveMatch } from '../storage.js'
 
 /**
@@ -19,6 +24,12 @@ export const useMatchStore = defineStore('match', () => {
 
   const state = computed(() => matchState(events.value))
   const canUndo = computed(() => (state.value?.history.length ?? 0) > 0)
+  const substitutionsLeft = computed(() =>
+    state.value ? countSubstitutionsLeft(state.value.substitutions) : 0,
+  )
+  const substitutionMode = computed(
+    () => settings.value.substitutionMode ?? SUBSTITUTION_MODES.FIVB,
+  )
   const canScore = computed(() => {
     if (!state.value) return false
 
@@ -57,6 +68,31 @@ export const useMatchStore = defineStore('match', () => {
     persist()
   }
 
+  /**
+   * @param {{ outgoingId: string, incomingId: string, exceptional?: boolean }} request
+   */
+  function addSubstitution({ outgoingId, incomingId, exceptional = false }) {
+    if (!state.value) {
+      return { ok: false, reason: { code: 'NO_MATCH', message: 'Матч не начат' } }
+    }
+
+    const mode = substitutionMode.value
+    const result = substitute(state.value.substitutions, {
+      outgoingId,
+      incomingId,
+      exceptional,
+      mode,
+    })
+    if (!result.ok) return result
+
+    events.value = [
+      ...events.value,
+      { type: EVENT_TYPES.SUBSTITUTION, outgoingId, incomingId, exceptional, mode },
+    ]
+    persist()
+    return result
+  }
+
   function undo() {
     const next = undoLastPoint(events.value)
     if (next === events.value) return
@@ -75,5 +111,18 @@ export const useMatchStore = defineStore('match', () => {
     saveMatch({ events: events.value, settings: settings.value }, storage)
   }
 
-  return { events, settings, state, canUndo, load, addPoint, addStat, undo, reset }
+  return {
+    events,
+    settings,
+    state,
+    canUndo,
+    substitutionsLeft,
+    substitutionMode,
+    load,
+    addPoint,
+    addStat,
+    addSubstitution,
+    undo,
+    reset,
+  }
 })
