@@ -60,6 +60,14 @@ describe('MatchCourt in protocol mode', () => {
     expect(circle.text()).toContain('Диагональный')
   })
 
+  it('places the protocol circles by their zones', () => {
+    const wrapper = mountCourt([START_US])
+
+    const zoneOne = wrapper.get('[data-zone="1"]')
+    expect(zoneOne.attributes('data-x')).toBe('83')
+    expect(zoneOne.attributes('data-y')).toBe('78')
+  })
+
   it('shows only our six players', () => {
     const wrapper = mountCourt([START_US])
 
@@ -86,6 +94,12 @@ describe('MatchCourt in protocol mode', () => {
 })
 
 describe('MatchCourt in game mode', () => {
+  it('draws the three-metre attack line', () => {
+    const wrapper = mountCourt([START_US], { mode: 'game' })
+
+    expect(wrapper.find('.court-half__attack-line').exists()).toBe(true)
+  })
+
   it('places the six by the reception coordinates', () => {
     const wrapper = mountCourt([START_US], { mode: 'game' })
 
