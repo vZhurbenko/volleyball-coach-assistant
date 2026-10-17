@@ -74,6 +74,14 @@ describe('reload mid-match', () => {
 
     expect(router.currentRoute.value.name).toBe('match')
   })
+
+  it('returns to the lineup between sets', async () => {
+    saveSavedMatch([SET_START, ...Array.from({ length: 25 }, () => POINT_US)])
+
+    const router = await startAt('/')
+
+    expect(router.currentRoute.value.name).toBe('lineup')
+  })
 })
 
 describe('guards in the real router', () => {

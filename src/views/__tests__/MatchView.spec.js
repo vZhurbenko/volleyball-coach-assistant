@@ -379,3 +379,43 @@ describe('MatchView substitutions', () => {
     })
   })
 })
+
+describe('MatchView between sets', () => {
+  it('shows the finished set and goes to the lineup', async () => {
+    saveWith([SET_START, ...points(TEAMS.US, 25)])
+    const { wrapper, router } = await mountView()
+
+    const panel = wrapper.get('[data-field="set-end"]')
+    expect(panel.text()).toContain('Партия 1 завершена')
+    expect(panel.text()).toContain('Наши')
+    expect(panel.text()).toContain('25:0')
+
+    await wrapper.get('[data-action="next-set"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('lineup')
+  })
+
+  it('hides the substitution action when the set is over', async () => {
+    saveWith([SET_START, ...points(TEAMS.US, 25)])
+    const { wrapper } = await mountView()
+
+    expect(wrapper.find('[data-action="open-substitution"]').exists()).toBe(false)
+  })
+
+  it('keeps the substitution action during the set', async () => {
+    saveWith([SET_START, ...points(TEAMS.US, 2)])
+    const { wrapper } = await mountView()
+
+    expect(wrapper.find('[data-field="set-end"]').exists()).toBe(false)
+    expect(wrapper.find('[data-action="open-substitution"]').exists()).toBe(true)
+  })
+
+  it('does not show the set break after the match is over', async () => {
+    const set = [SET_START, ...points(TEAMS.US, 25)]
+    saveWith([...set, ...set, ...set])
+    const { wrapper } = await mountView()
+
+    expect(wrapper.find('[data-field="set-end"]').exists()).toBe(false)
+  })
+})

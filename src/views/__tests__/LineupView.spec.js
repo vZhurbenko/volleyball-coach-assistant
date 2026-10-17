@@ -5,7 +5,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ROLES } from '../../domain/constants.js'
+import { defaultLineup } from '../../domain/lineup.js'
+import { EVENT_TYPES, matchState } from '../../domain/match.js'
 import { TEAM_ROSTER } from '../../domain/players.js'
+import { TEAMS } from '../../domain/score.js'
+import { STAT_TYPES, countersForSet } from '../../domain/stats.js'
+import { loadMatch, saveMatch } from '../../storage.js'
 import { useLineupStore } from '../../stores/lineup.js'
 import LineupView from '../LineupView.vue'
 
@@ -19,18 +24,55 @@ const LIBERO = {
 
 const ROSTER_WITH_LIBERO = [...TEAM_ROSTER, LIBERO]
 
+const DEFAULT_LINEUP = defaultLineup(TEAM_ROSTER)
+
+/** Хранилище в памяти — та же поверхность, что у localStorage. */
+function fakeStorage() {
+  const items = new Map()
+  return {
+    getItem: (key) => items.get(key) ?? null,
+    setItem: (key, value) => items.set(key, String(value)),
+    removeItem: (key) => items.delete(key),
+  }
+}
+
+function saveWith(storage, events) {
+  saveMatch(
+    {
+      events,
+      settings: {
+        teamName: 'Наши',
+        opponent: 'Динамо',
+        lineup: DEFAULT_LINEUP,
+        serving: TEAMS.US,
+        substitutionMode: 'count',
+      },
+    },
+    storage,
+  )
+}
+
+const setStart = (lineup = DEFAULT_LINEUP, serving = TEAMS.US) => ({
+  type: EVENT_TYPES.SET_START,
+  lineup,
+  serving,
+})
+const points = (team, count) =>
+  Array.from({ length: count }, () => ({ type: EVENT_TYPES.POINT, team }))
+
 function testRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', name: 'lineup', component: { template: '<div />' } },
       { path: '/setup', name: 'setup', component: { template: '<div />' } },
+      { path: '/match', name: 'match', component: { template: '<div />' } },
     ],
   })
 }
 
 /** Монтирует экран с чистым store и роутером — как в приложении. */
-async function mountView(roster = TEAM_ROSTER) {
+async function mountView(roster = TEAM_ROSTER, storage = fakeStorage()) {
   const pinia = createPinia()
   setActivePinia(pinia)
   useLineupStore().init(roster)
@@ -39,8 +81,11 @@ async function mountView(roster = TEAM_ROSTER) {
   await router.push('/')
   await router.isReady()
 
-  const wrapper = mount(LineupView, { global: { plugins: [pinia, router] } })
-  return { wrapper, router }
+  const wrapper = mount(LineupView, {
+    props: { storage },
+    global: { plugins: [pinia, router] },
+  })
+  return { wrapper, router, storage }
 }
 
 /** Открывает список игроков для зоны. */
@@ -180,5 +225,90 @@ describe('LineupView', () => {
 
     await select.setValue('')
     expect(wrapper.text()).toContain('Либеро не выбран')
+  })
+})
+
+describe('LineupView between sets', () => {
+  it('starts the next set with the FIVB serving team', async () => {
+    const storage = fakeStorage()
+    saveWith(storage, [
+      setStart(DEFAULT_LINEUP, TEAMS.US),
+      { type: EVENT_TYPES.STAT, playerId: 'titov', statType: STAT_TYPES.POINT },
+      ...points(TEAMS.US, 25),
+    ])
+    const { wrapper, router } = await mountView(TEAM_ROSTER, storage)
+
+    expect(wrapper.get('[data-field="next-serving"]').text()).toContain('Динамо')
+
+    await wrapper.get('[data-action="start-next-set"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('match')
+
+    const events = loadMatch(storage).events
+    expect(events.at(-1)).toEqual({
+      type: EVENT_TYPES.SET_START,
+      lineup: DEFAULT_LINEUP,
+      serving: TEAMS.THEM,
+    })
+
+    const state = matchState(events)
+    expect(state.setNumber).toBe(2)
+    expect(countersForSet(state.stats, 1).titov.point).toBe(1)
+    expect(countersForSet(state.stats, 2)).toEqual({})
+  })
+
+  it('prefills the six from the previous set and starts with the edits', async () => {
+    const storage = fakeStorage()
+    const previous = {
+      ...DEFAULT_LINEUP,
+      zones: {
+        ...DEFAULT_LINEUP.zones,
+        1: { playerId: 'gorobchenko', role: ROLES.OPPOSITE },
+      },
+    }
+    saveWith(storage, [setStart(previous, TEAMS.US), ...points(TEAMS.US, 25)])
+
+    const { wrapper } = await mountView(TEAM_ROSTER, storage)
+    expect(wrapper.get('[data-zone="1"]').text()).toContain('Горобченко')
+
+    await assign(wrapper, 4, 'fatkulin', ROLES.SETTER)
+    await wrapper.get('[data-action="start-next-set"]').trigger('click')
+    await flushPromises()
+
+    const lineup = loadMatch(storage).events.at(-1).lineup
+    expect(lineup.zones[1].playerId).toBe('gorobchenko')
+    expect(lineup.zones[4].playerId).toBe('fatkulin')
+  })
+
+  it('asks who serves first in the fifth set', async () => {
+    const storage = fakeStorage()
+    const playedSet = (serving, winner) => [
+      setStart(DEFAULT_LINEUP, serving),
+      ...points(winner, 25),
+    ]
+    saveWith(storage, [
+      ...playedSet(TEAMS.US, TEAMS.US),
+      ...playedSet(TEAMS.THEM, TEAMS.THEM),
+      ...playedSet(TEAMS.US, TEAMS.US),
+      ...playedSet(TEAMS.THEM, TEAMS.THEM),
+    ])
+
+    const { wrapper, router } = await mountView(TEAM_ROSTER, storage)
+
+    const start = wrapper.get('[data-action="start-next-set"]')
+    expect(start.attributes('disabled')).toBeDefined()
+
+    await wrapper.get('[data-field="tiebreak-serving-them"]').setValue()
+    expect(start.attributes('disabled')).toBeUndefined()
+
+    await start.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('match')
+
+    const events = loadMatch(storage).events
+    expect(events.at(-1).serving).toBe(TEAMS.THEM)
+    expect(matchState(events).setNumber).toBe(5)
   })
 })

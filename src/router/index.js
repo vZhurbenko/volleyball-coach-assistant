@@ -34,6 +34,7 @@ export function createAppRouter({
         name: 'lineup',
         component: LineupView,
         beforeEnter: guards.resume,
+        props: { storage },
       },
       {
         path: '/setup',

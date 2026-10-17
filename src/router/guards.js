@@ -1,15 +1,18 @@
-import { isMatchOver } from '../domain/score.js'
+import { currentSet, isMatchOver, isSetOver } from '../domain/score.js'
 
 /**
- * Экран, на который возвращает сохранённый матч.
+ * Экран, на который возвращает сохранённый матч. Между партиями тренер
+ * возвращается к расстановке, чтобы собрать шестёрку на следующую партию.
  *
  * @param {import('../domain/match.js').MatchState | null} state
  * @returns {'lineup' | 'match' | 'summary'}
  */
 export function resumeScreen(state) {
   if (!state) return 'lineup'
+  if (isMatchOver(state.score)) return 'summary'
+  if (isSetOver(currentSet(state.score))) return 'lineup'
 
-  return isMatchOver(state.score) ? 'summary' : 'match'
+  return 'match'
 }
 
 /**
