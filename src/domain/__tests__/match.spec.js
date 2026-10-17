@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import { defaultLineup } from '../lineup.js'
 import { EVENT_TYPES, matchState, playersOnCourt, undoLastPoint } from '../match.js'
-import { MOCK_ROSTER } from '../players.js'
+import { MOCK_ROSTER } from './fixtures/roster.js'
 import { TEAMS, currentSet, isSetOver } from '../score.js'
 
 const SIX = defaultLineup(MOCK_ROSTER)

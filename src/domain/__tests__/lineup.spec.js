@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 
 import { ROLES, ZONES } from '../constants.js'
-import { MOCK_ROSTER, findPlayer } from '../players.js'
+import { findPlayer } from '../players.js'
+import { MOCK_ROSTER } from './fixtures/roster.js'
 import { defaultLineup, emptyLineup, validateLineup } from '../lineup.js'
 
 /** Карта пустых зон: { 1: null, …, 6: null }. */

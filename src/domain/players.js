@@ -7,46 +7,101 @@ import { ROLES } from './constants.js'
  * @property {string} lastName
  * @property {number} number — игровой номер
  * @property {string} role — одна из ролей `ROLES`
+ * @property {number} [startingZone] — зона в дефолтной стартовой шестёрке
  */
 
 /**
- * Мок-состав: фиктивные игроки вместо реальной команды, чтобы сценарий
- * проходился целиком. Либеро в текущем составе команды нет, но он есть здесь —
- * без него не проверить замены либеро.
+ * Состав команды. Захардкожен: редактирования состава в UI нет.
+ *
+ * У шести игроков основы указана стартовая зона; остальные — запасные.
+ * Либеро в текущем составе команды нет.
  *
  * @type {Player[]}
  */
-export const MOCK_ROSTER = [
-  { id: 'belov', firstName: 'Артём', lastName: 'Белов', number: 7, role: ROLES.SETTER },
-  { id: 'krylov', firstName: 'Дмитрий', lastName: 'Крылов', number: 11, role: ROLES.SETTER },
-  { id: 'efimov', firstName: 'Максим', lastName: 'Ефимов', number: 9, role: ROLES.OPPOSITE },
-  { id: 'savelev', firstName: 'Игорь', lastName: 'Савельев', number: 17, role: ROLES.OPPOSITE },
+export const TEAM_ROSTER = [
   {
-    id: 'sokolov',
-    firstName: 'Никита',
-    lastName: 'Соколов',
-    number: 4,
-    role: ROLES.OUTSIDE_HITTER,
-  },
-  { id: 'lebedev', firstName: 'Егор', lastName: 'Лебедев', number: 5, role: ROLES.OUTSIDE_HITTER },
-  { id: 'gusev', firstName: 'Роман', lastName: 'Гусев', number: 8, role: ROLES.OUTSIDE_HITTER },
-  { id: 'orlov', firstName: 'Павел', lastName: 'Орлов', number: 15, role: ROLES.OUTSIDE_HITTER },
-  {
-    id: 'morozov',
-    firstName: 'Андрей',
-    lastName: 'Морозов',
+    id: 'zhurbenko',
+    firstName: 'Владислав',
+    lastName: 'Журбенко',
     number: 3,
     role: ROLES.MIDDLE_BLOCKER,
   },
-  { id: 'volkov', firstName: 'Сергей', lastName: 'Волков', number: 12, role: ROLES.MIDDLE_BLOCKER },
   {
-    id: 'tikhonov',
-    firstName: 'Илья',
-    lastName: 'Тихонов',
-    number: 14,
+    id: 'panchishkina',
+    firstName: 'Мария',
+    lastName: 'Панчишкина',
+    number: 5,
+    role: ROLES.SETTER,
+    startingZone: 4,
+  },
+  {
+    id: 'gorobchenko',
+    firstName: 'Роман',
+    lastName: 'Горобченко',
+    number: 10,
+    role: ROLES.OPPOSITE,
+  },
+  {
+    id: 'gromov',
+    firstName: 'Вадим',
+    lastName: 'Громов',
+    number: 11,
+    role: ROLES.MIDDLE_BLOCKER,
+    startingZone: 3,
+  },
+  {
+    id: 'emelyanov',
+    firstName: 'Денис',
+    lastName: 'Емельянов',
+    number: 12,
     role: ROLES.MIDDLE_BLOCKER,
   },
-  { id: 'zimin', firstName: 'Кирилл', lastName: 'Зимин', number: 1, role: ROLES.LIBERO },
+  {
+    id: 'verzhenovsky',
+    firstName: 'Владислав',
+    lastName: 'Верженовский',
+    number: 14,
+    role: ROLES.OUTSIDE_HITTER,
+    startingZone: 2,
+  },
+  {
+    id: 'timofeev',
+    firstName: 'Андрей',
+    lastName: 'Тимофеев',
+    number: 17,
+    role: ROLES.OUTSIDE_HITTER,
+  },
+  {
+    id: 'komissarov',
+    firstName: 'Федров',
+    lastName: 'Комиссаров',
+    number: 50,
+    role: ROLES.MIDDLE_BLOCKER,
+    startingZone: 6,
+  },
+  {
+    id: 'abroskin',
+    firstName: 'Илья',
+    lastName: 'Аброскин',
+    number: 9,
+    role: ROLES.OUTSIDE_HITTER,
+    startingZone: 5,
+  },
+  {
+    id: 'fatkulin',
+    firstName: 'Рафкат',
+    lastName: 'Фаткулин',
+    number: 9,
+    role: ROLES.SETTER,
+  },
+  {
+    id: 'titov',
+    firstName: 'Александр',
+    lastName: 'Титов',
+    number: 2,
+    role: ROLES.OPPOSITE,
+    startingZone: 1,
+  },
 ]
 
 /**

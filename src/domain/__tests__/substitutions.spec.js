@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import { MATCH_RULES, ZONES } from '../constants.js'
 import { defaultLineup } from '../lineup.js'
-import { MOCK_ROSTER } from '../players.js'
+import { MOCK_ROSTER } from './fixtures/roster.js'
 import { initSubstitutions, substitute, substitutionsLeft } from '../substitutions.js'
 
 /** Шестёрка базы 5-1: зона 1 — Белов, 2 — Соколов, 3 — Морозов, 4 — Ефимов, 5 — Лебедев, 6 — Волков. */

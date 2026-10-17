@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { defaultLineup, validateLineup } from '../domain/lineup.js'
-import { MOCK_ROSTER } from '../domain/players.js'
+import { TEAM_ROSTER } from '../domain/players.js'
 
 /**
  * Стартовая расстановка, общая для экранов расстановки и настройки игры.
@@ -11,8 +11,20 @@ import { MOCK_ROSTER } from '../domain/players.js'
  * Валидация берётся из ядра, чтобы тексты нарушений не дублировались в UI.
  */
 export const useLineupStore = defineStore('lineup', () => {
-  const lineup = ref(defaultLineup(MOCK_ROSTER))
-  const validation = computed(() => validateLineup(lineup.value, MOCK_ROSTER))
+  const roster = ref(TEAM_ROSTER)
+  const lineup = ref(defaultLineup(roster.value))
+  const validation = computed(() => validateLineup(lineup.value, roster.value))
+
+  /**
+   * Задаёт состав команды и заново собирает дефолтную шестёрку.
+   * Нужен тестам, которые подменяют состав, например добавляют либеро.
+   *
+   * @param {import('../domain/players.js').Player[]} teamRoster
+   */
+  function init(teamRoster) {
+    roster.value = teamRoster
+    lineup.value = defaultLineup(teamRoster)
+  }
 
   /**
    * @param {number} zone
@@ -31,8 +43,8 @@ export const useLineupStore = defineStore('lineup', () => {
   }
 
   function reset() {
-    lineup.value = defaultLineup(MOCK_ROSTER)
+    lineup.value = defaultLineup(roster.value)
   }
 
-  return { lineup, validation, assign, setLibero, reset }
+  return { roster, lineup, validation, init, assign, setLibero, reset }
 })

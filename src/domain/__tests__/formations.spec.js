@@ -3,7 +3,8 @@ import { describe, it, expect } from 'vitest'
 import { ROLES, ZONES } from '../constants.js'
 import { FORMATIONS, receivingPositions, setterZone } from '../formations.js'
 import { defaultLineup } from '../lineup.js'
-import { MOCK_ROSTER, findPlayer } from '../players.js'
+import { findPlayer } from '../players.js'
+import { MOCK_ROSTER } from './fixtures/roster.js'
 
 /** Шестёрка базы 5-1: связка в зоне 1, значит расстановка 1. */
 const SIX = defaultLineup(MOCK_ROSTER)

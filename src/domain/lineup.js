@@ -32,32 +32,20 @@ export function emptyLineup() {
 }
 
 /**
- * Дефолтная стартовая шестёрка — база 5-1: связка в зоне 1 и диагональный
- * в зоне 4, доигровщики в зонах 2 и 5, ЦБ в зонах 3 и 6.
- * Игроки берутся из состава по порядку — первые подходящие по роли.
+ * Дефолтная стартовая шестёрка — по данным состава: игроки, у которых указана
+ * стартовая зона, встают в свои зоны. Роль берётся из состава.
  *
  * @param {import('./players.js').Player[]} roster
  * @returns {Lineup}
  */
 export function defaultLineup(roster) {
-  const byRole = (role) => roster.filter((player) => player.role === role)
+  const zones = Object.fromEntries(ZONES.map((zone) => [zone, null]))
 
-  const setters = byRole(ROLES.SETTER)
-  const opposites = byRole(ROLES.OPPOSITE)
-  const outsideHitters = byRole(ROLES.OUTSIDE_HITTER)
-  const middleBlockers = byRole(ROLES.MIDDLE_BLOCKER)
-
-  return {
-    zones: {
-      1: assignment(setters[0]),
-      2: assignment(outsideHitters[0]),
-      3: assignment(middleBlockers[0]),
-      4: assignment(opposites[0]),
-      5: assignment(outsideHitters[1]),
-      6: assignment(middleBlockers[1]),
-    },
-    liberoId: null,
+  for (const player of roster) {
+    if (player.startingZone != null) zones[player.startingZone] = assignment(player)
   }
+
+  return { zones, liberoId: null }
 }
 
 /**
