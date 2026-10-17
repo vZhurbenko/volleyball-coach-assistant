@@ -41,6 +41,16 @@ import { MATCH_RULES, ZONES } from './constants.js'
  */
 
 /**
+ * Режимы замен. В любительской лиге пары и возвраты можно не проверять —
+ * контролируется только количество. Выходы либеро в обоих режимах остаются
+ * автоматическими по правилам FIVB.
+ */
+export const SUBSTITUTION_MODES = {
+  FIVB: 'fivb',
+  COUNT: 'count',
+}
+
+/**
  * Открывает счёт замен для новой партии: на площадке стартовая шестёрка,
  * лимит не тронут. Выбывшие и исключительные замены переносятся из прошлой
  * партии — это факты матча, а не партии.
@@ -93,22 +103,41 @@ export function playerInSlot(state, slotNumber) {
  * пара исчерпана — третий игрок в неё не встаёт.
  *
  * @param {Substitutions} state
- * @param {{ outgoingId: string, incomingId: string, exceptional?: boolean }} request
+ * @param {{
+ *   outgoingId: string,
+ *   incomingId: string,
+ *   exceptional?: boolean,
+ *   mode?: 'fivb' | 'count',
+ * }} request
  *   `exceptional` — замена при травме, болезни или удалении: идёт сверх лимита
- *   и правил пар, а заменённый выбывает до конца матча
+ *   и правил пар, а заменённый выбывает до конца матча. В режиме `count`
+ *   игнорируется: проверяется только количество.
  * @returns {{ ok: true, state: Substitutions } | { ok: false, reason: SubstitutionRefusal }}
  */
-export function substitute(state, { outgoingId, incomingId, exceptional = false }) {
+export function substitute(
+  state,
+  { outgoingId, incomingId, exceptional = false, mode = SUBSTITUTION_MODES.FIVB },
+) {
   if (state.retired.includes(incomingId)) {
     return refuse('PLAYER_RETIRED', 'Игрок выбыл до конца матча')
   }
 
-  if (!exceptional && substitutionsLeft(state) === 0) {
-    return refuse(
-      'SUBSTITUTION_LIMIT_REACHED',
-      `Лимит замен в партии исчерпан (${MATCH_RULES.SUBSTITUTIONS_PER_SET})`,
-    )
+  if (mode === SUBSTITUTION_MODES.COUNT) {
+    if (substitutionsLeft(state) === 0) return refuseLimit()
+
+    const countSlot = slotOf(state, outgoingId)
+    if (countSlot === null) {
+      return refuse('PLAYER_NOT_ON_COURT', 'Уходящий игрок не на площадке')
+    }
+
+    if (isOnCourt(state, incomingId)) {
+      return refuse('PLAYER_ALREADY_ON_COURT', 'Входящий игрок уже на площадке')
+    }
+
+    return { ok: true, state: applyCount(state, countSlot, incomingId) }
   }
+
+  if (!exceptional && substitutionsLeft(state) === 0) return refuseLimit()
 
   const slotNumber = slotOf(state, outgoingId)
   if (slotNumber === null) {
@@ -162,6 +191,27 @@ function apply(state, slotNumber, incomingId) {
 }
 
 /**
+ * Упрощённый режим: пары и возвраты не проверяются, вошедший становится
+ * хозяином позиции. Расходуется только лимит. Либеро сюда не попадает —
+ * его выходы остаются автоматическими по правилам FIVB.
+ */
+function applyCount(state, slotNumber, incomingId) {
+  return {
+    ...state,
+    used: state.used + 1,
+    slots: {
+      ...state.slots,
+      [slotNumber]: {
+        starterId: incomingId,
+        substituteId: null,
+        onCourt: 'starter',
+        starterReentered: false,
+      },
+    },
+  }
+}
+
+/**
  * Выбывший уходит из матча, а вошедший становится хозяином позиции: дальше слот
  * живёт по обычным правилам, поэтому замена не выключает позицию до конца матча.
  * Лимит не расходуется.
@@ -185,4 +235,11 @@ function applyExceptional(state, slotNumber, outgoingId, incomingId) {
 
 function refuse(code, message) {
   return { ok: false, reason: { code, message } }
+}
+
+function refuseLimit() {
+  return refuse(
+    'SUBSTITUTION_LIMIT_REACHED',
+    `Лимит замен в партии исчерпан (${MATCH_RULES.SUBSTITUTIONS_PER_SET})`,
+  )
 }

@@ -148,8 +148,8 @@ function recordStat(state, { playerId, statType }) {
   }
 }
 
-function recordSubstitution(state, { outgoingId, incomingId, exceptional = false }) {
-  const result = substitute(state.substitutions, { outgoingId, incomingId, exceptional })
+function recordSubstitution(state, { outgoingId, incomingId, exceptional = false, mode }) {
+  const result = substitute(state.substitutions, { outgoingId, incomingId, exceptional, mode })
   if (!result.ok) return state
 
   return { ...state, substitutions: result.state }

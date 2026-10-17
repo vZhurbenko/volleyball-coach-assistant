@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 
 import { EVENT_TYPES } from '../domain/match.js'
 import { TEAMS } from '../domain/score.js'
+import { SUBSTITUTION_MODES } from '../domain/substitutions.js'
 import { loadMatch, saveMatch } from '../storage.js'
 import { useLineupStore } from '../stores/lineup.js'
 
@@ -21,6 +22,7 @@ const { lineup } = storeToRefs(lineupStore)
 const saved = loadMatch(props.storage)
 const opponent = ref(saved?.settings?.opponent ?? '')
 const serving = ref(saved?.settings?.serving ?? TEAMS.US)
+const substitutionMode = ref(saved?.settings?.substitutionMode ?? SUBSTITUTION_MODES.COUNT)
 
 function startGame() {
   const opponentName = opponent.value.trim()
@@ -35,7 +37,12 @@ function startGame() {
           serving: serving.value,
         },
       ],
-      settings: { opponent: opponentName, lineup: lineup.value, serving: serving.value },
+      settings: {
+        opponent: opponentName,
+        lineup: lineup.value,
+        serving: serving.value,
+        substitutionMode: substitutionMode.value,
+      },
     },
     props.storage,
   )
@@ -72,6 +79,32 @@ function startGame() {
           Соперник
         </label>
       </fieldset>
+
+      <fieldset class="field field--choice">
+        <legend class="field__label">Правила замен</legend>
+        <label class="choice">
+          <input
+            v-model="substitutionMode"
+            type="radio"
+            :value="SUBSTITUTION_MODES.COUNT"
+            data-field="substitution-count"
+          />
+          Только количество
+        </label>
+        <label class="choice">
+          <input
+            v-model="substitutionMode"
+            type="radio"
+            :value="SUBSTITUTION_MODES.FIVB"
+            data-field="substitution-fivb"
+          />
+          По правилам FIVB
+        </label>
+      </fieldset>
+      <p class="hint">
+        В упрощённом режиме проверяется только лимит. Замены либеро в обоих режимах — по правилам
+        FIVB.
+      </p>
 
       <button type="submit" class="button-block" :disabled="!opponent.trim()" data-action="start">
         Начать игру
@@ -121,6 +154,11 @@ function startGame() {
   gap: 10px;
   min-height: var(--tap-size);
   font-weight: 500;
+}
+
+.hint {
+  color: var(--color-muted);
+  font-size: 0.85rem;
 }
 
 .button-block {

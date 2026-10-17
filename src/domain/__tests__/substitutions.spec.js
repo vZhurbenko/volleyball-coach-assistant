@@ -3,7 +3,13 @@ import { describe, it, expect } from 'vitest'
 import { MATCH_RULES, ZONES } from '../constants.js'
 import { defaultLineup } from '../lineup.js'
 import { MOCK_ROSTER } from './fixtures/roster.js'
-import { initSubstitutions, substitute, substitutionsLeft } from '../substitutions.js'
+import {
+  SUBSTITUTION_MODES,
+  initSubstitutions,
+  playerInSlot,
+  substitute,
+  substitutionsLeft,
+} from '../substitutions.js'
 
 /** Шестёрка базы 5-1: зона 1 — Белов, 2 — Соколов, 3 — Морозов, 4 — Ефимов, 5 — Лебедев, 6 — Волков. */
 const SIX = defaultLineup(MOCK_ROSTER)
@@ -269,5 +275,47 @@ describe('exceptional substitution', () => {
       exceptional: true,
     })
     expect(result.reason.code).toBe('PLAYER_ALREADY_ON_COURT')
+  })
+})
+
+describe('count-only mode', () => {
+  /** Замена в любительском режиме: только лимит и кто где находится. */
+  function swapCount(state, outgoingId, incomingId) {
+    const result = substitute(state, {
+      outgoingId,
+      incomingId,
+      mode: SUBSTITUTION_MODES.COUNT,
+    })
+    expect(result.ok, `замена ${outgoingId} → ${incomingId}: ${result.reason?.message}`).toBe(true)
+    return result.state
+  }
+
+  it('lets a third player take the position, ignoring the pair rules', () => {
+    let state = initSubstitutions(SIX)
+    state = swapCount(state, 'morozov', 'tikhonov')
+    state = swapCount(state, 'tikhonov', 'gusev')
+
+    expect(playerInSlot(state, 3)).toBe('gusev')
+    expect(state.used).toBe(2)
+  })
+
+  it('still stops at the substitution limit', () => {
+    const spent = { ...initSubstitutions(SIX), used: MATCH_RULES.SUBSTITUTIONS_PER_SET }
+
+    const result = substitute(spent, {
+      outgoingId: 'morozov',
+      incomingId: 'tikhonov',
+      mode: SUBSTITUTION_MODES.COUNT,
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.reason.code).toBe('SUBSTITUTION_LIMIT_REACHED')
+  })
+
+  it('keeps everyone in the match — no retirement', () => {
+    const state = swapCount(initSubstitutions(SIX), 'morozov', 'tikhonov')
+
+    expect(state.retired).toEqual([])
+    expect(state.exceptional).toEqual([])
   })
 })
