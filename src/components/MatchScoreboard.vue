@@ -38,32 +38,40 @@ const streakText = computed(() =>
     <div class="scoreboard__sides">
       <button
         type="button"
-        class="scoreboard__side"
+        class="scoreboard__side scoreboard__side--us"
         :class="{ 'scoreboard__side--serving': serving === TEAMS.US }"
         data-side="us"
-        aria-label="Очко нам"
+        :aria-label="`Очко нам. ${teamName}, ${set.points.us}${serving === TEAMS.US ? ', подача' : ''}`"
         @click="$emit('point', TEAMS.US)"
       >
-        <span class="scoreboard__team" data-field="team-us">{{ teamName }}</span>
-        <span class="scoreboard__points" data-field="points-us">{{ set.points.us }}</span>
-        <span class="scoreboard__serve" data-field="serve-us">{{
-          serving === TEAMS.US ? 'подача' : ''
-        }}</span>
+        <span :key="set.points.us" class="scoreboard__points" data-field="points-us">
+          {{ set.points.us }}
+        </span>
+        <span class="scoreboard__team-bar">
+          <span class="scoreboard__team" data-field="team-us">{{ teamName }}</span>
+          <span class="scoreboard__serve" data-field="serve-us">{{
+            serving === TEAMS.US ? 'подача' : ''
+          }}</span>
+        </span>
       </button>
 
       <button
         type="button"
-        class="scoreboard__side"
+        class="scoreboard__side scoreboard__side--them"
         :class="{ 'scoreboard__side--serving': serving === TEAMS.THEM }"
         data-side="them"
-        :aria-label="`Очко сопернику: ${opponent}`"
+        :aria-label="`Очко сопернику. ${opponent}, ${set.points.them}${serving === TEAMS.THEM ? ', подача' : ''}`"
         @click="$emit('point', TEAMS.THEM)"
       >
-        <span class="scoreboard__team" data-field="team-them">{{ opponent }}</span>
-        <span class="scoreboard__points" data-field="points-them">{{ set.points.them }}</span>
-        <span class="scoreboard__serve" data-field="serve-them">{{
-          serving === TEAMS.THEM ? 'подача' : ''
-        }}</span>
+        <span :key="set.points.them" class="scoreboard__points" data-field="points-them">
+          {{ set.points.them }}
+        </span>
+        <span class="scoreboard__team-bar">
+          <span class="scoreboard__team" data-field="team-them">{{ opponent }}</span>
+          <span class="scoreboard__serve" data-field="serve-them">{{
+            serving === TEAMS.THEM ? 'подача' : ''
+          }}</span>
+        </span>
       </button>
     </div>
 
@@ -84,6 +92,7 @@ const streakText = computed(() =>
   gap: 8px;
   color: var(--color-muted);
   font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .scoreboard__sides {
@@ -92,48 +101,127 @@ const streakText = computed(() =>
   gap: 8px;
 }
 
+/* Карточка — большая кнопка начисления очка. */
 .scoreboard__side {
+  --team-color: var(--color-primary);
+
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
   min-height: 120px;
-  padding: 12px 8px;
-  border: 2px solid transparent;
-  border-radius: var(--radius);
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 14px;
   background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: var(--shadow);
+  color: #273449;
+  box-shadow: 0 2px 10px rgb(16 24 40 / 10%);
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.scoreboard__side--us {
+  --team-color: #1d4ed8;
+}
+
+.scoreboard__side--them {
+  --team-color: #b91c1c;
 }
 
 .scoreboard__side--serving {
-  border-color: var(--color-primary);
-  background: #e8f0fd;
+  color: var(--team-color);
+}
+
+.scoreboard__points {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(2.5rem, 13vw, 4.25rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  animation: score-pop 0.16s ease-out;
+}
+
+.scoreboard__side:not(.scoreboard__side--serving) .scoreboard__points {
+  color: #273449;
+}
+
+.scoreboard__team-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: clamp(0.9rem, 3vw, 1.05rem);
+  font-weight: 600;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.scoreboard__side--serving .scoreboard__team-bar {
+  background: var(--team-color);
+  color: #fff;
 }
 
 .scoreboard__team {
   overflow-wrap: anywhere;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.scoreboard__points {
-  font-size: 2.75rem;
-  font-weight: 700;
-  line-height: 1;
+  text-align: center;
 }
 
 .scoreboard__serve {
-  min-height: 1.2em;
-  color: var(--color-primary);
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
 }
 
 .scoreboard__streaks {
   min-height: 1.5em;
+  color: var(--color-muted);
   font-size: 0.9rem;
+}
+
+@keyframes score-pop {
+  from {
+    transform: scale(1.08);
+    opacity: 0.6;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (min-width: 600px) {
+  .scoreboard__sides {
+    gap: 10px;
+  }
+
+  .scoreboard__side {
+    border-radius: 16px;
+  }
+
+  .scoreboard__team-bar {
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scoreboard__points {
+    animation: none;
+  }
+
+  .scoreboard__side,
+  .scoreboard__team-bar {
+    transition: none;
+  }
 }
 </style>
