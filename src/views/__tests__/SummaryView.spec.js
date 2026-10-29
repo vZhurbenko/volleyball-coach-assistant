@@ -121,7 +121,14 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  delete navigator.share
+  delete navigator.clipboard
+  delete navigator.standalone
 })
+
+function stubNavigator(name, value) {
+  Object.defineProperty(navigator, name, { configurable: true, value })
+}
 
 describe('SummaryView', () => {
   it('renders the match result and the set scores', async () => {
@@ -241,5 +248,51 @@ describe('SummaryView', () => {
     const { wrapper } = await mountView()
 
     expect(wrapper.get('[data-total-player="titov"]').text()).toContain('Титов-младший')
+  })
+
+  it('hides printing and offers sharing in the installed iOS app', async () => {
+    stubNavigator('share', vi.fn().mockResolvedValue())
+    stubNavigator('standalone', true)
+
+    const { wrapper } = await mountView()
+
+    expect(wrapper.find('[data-action="print"]').exists()).toBe(false)
+    expect(wrapper.get('[data-action="share"]').text()).toBe('Поделиться')
+  })
+
+  it('shares the text summary', async () => {
+    const share = vi.fn().mockResolvedValue()
+    stubNavigator('share', share)
+
+    const { wrapper } = await mountView()
+
+    await wrapper.get('[data-action="share"]').trigger('click')
+    await flushPromises()
+
+    expect(share).toHaveBeenCalledWith({
+      title: 'Итоги матча',
+      text: expect.stringContaining('Наши — Динамо'),
+    })
+    expect(share.mock.calls[0][0].text).toContain('За матч')
+  })
+
+  it('copies the text summary and confirms it', async () => {
+    const writeText = vi.fn().mockResolvedValue()
+    stubNavigator('clipboard', { writeText })
+
+    const { wrapper } = await mountView()
+
+    await wrapper.get('[data-action="copy"]').trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Наши — Динамо'))
+    expect(wrapper.get('[data-field="export-status"]').text()).toBe('Скопировано')
+  })
+
+  it('hides sharing when the browser cannot share', async () => {
+    const { wrapper } = await mountView()
+
+    expect(wrapper.find('[data-action="share"]').exists()).toBe(false)
+    expect(wrapper.get('[data-action="copy"]').exists()).toBe(true)
   })
 })
