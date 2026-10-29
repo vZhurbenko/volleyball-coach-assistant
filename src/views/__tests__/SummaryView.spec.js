@@ -166,6 +166,29 @@ describe('SummaryView', () => {
     expect(wrapper.get('[data-total-player="zhurbenko"] [data-stat="point"]').text()).toBe('0')
   })
 
+  it('counts the reception error by set and for the match', async () => {
+    saveFinished(storage, [
+      ...playedSet({
+        serving: TEAMS.US,
+        us: 25,
+        them: 10,
+        stats: [stat('titov', STAT_TYPES.RECEPTION_ERROR)],
+      }),
+      ...playedSet({ serving: TEAMS.THEM, us: 20, them: 25 }),
+      ...playedSet({ serving: TEAMS.US, us: 25, them: 15 }),
+      ...playedSet({ serving: TEAMS.THEM, us: 25, them: 20 }),
+    ])
+
+    const { wrapper } = await mountView()
+
+    expect(
+      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="reception_error"]').text(),
+    ).toBe('1')
+    expect(
+      wrapper.get('[data-total-player="titov"] [data-stat="reception_error"]').text(),
+    ).toBe('1')
+  })
+
   it('renders the point log for every set', async () => {
     const { wrapper } = await mountView()
 
