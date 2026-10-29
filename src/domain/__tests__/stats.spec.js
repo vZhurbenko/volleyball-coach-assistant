@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   STAT_LABELS,
+  STAT_TONES,
   STAT_TYPES,
   addStat,
   countersForPlayer,
@@ -12,7 +13,7 @@ import {
 
 const FACT = (setNumber, playerId, type) => ({ setNumber, playerId, type })
 
-/** Партия 1: Белов +очко, партия 2: Белов два блока, Морозов +подача. */
+/** Партия 1: Белов очко, партия 2: Белов два блока, Морозов подача. */
 function twoSetsOfFacts() {
   let stats = initStats()
   stats = addStat(stats, FACT(1, 'belov', STAT_TYPES.POINT))
@@ -23,14 +24,33 @@ function twoSetsOfFacts() {
 }
 
 describe('STAT_TYPES', () => {
-  it('holds the five match facts', () => {
-    expect(Object.values(STAT_TYPES)).toEqual(['point', 'serve', 'serve_error', 'error', 'block'])
+  it('holds the six match facts in menu order', () => {
+    expect(Object.values(STAT_TYPES)).toEqual([
+      'point',
+      'serve',
+      'block',
+      'error',
+      'reception_error',
+      'serve_error',
+    ])
   })
 
-  it('labels every fact for the player menu', () => {
+  it('labels every fact for the player menu without a plus sign', () => {
     for (const type of Object.values(STAT_TYPES)) {
       expect(STAT_LABELS[type]).toMatch(/[А-Яа-я]/)
+      expect(STAT_LABELS[type]).not.toContain('+')
     }
+  })
+
+  it('marks the first three facts positive and the last three negative', () => {
+    expect(Object.values(STAT_TONES)).toEqual([
+      'positive',
+      'positive',
+      'positive',
+      'negative',
+      'negative',
+      'negative',
+    ])
   })
 })
 
@@ -39,9 +59,10 @@ describe('emptyCounters', () => {
     expect(emptyCounters()).toEqual({
       point: 0,
       serve: 0,
-      serve_error: 0,
-      error: 0,
       block: 0,
+      error: 0,
+      reception_error: 0,
+      serve_error: 0,
     })
   })
 })

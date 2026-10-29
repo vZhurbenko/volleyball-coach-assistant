@@ -1,5 +1,6 @@
 /**
- * Текстовая сводка матча: результат, статистика по партиям и за матч, замены.
+ * Текстовая сводка матча в Markdown: результат, статистика по партиям
+ * и за матч, замены.
  *
  * Нужна для обмена итогами там, где печать недоступна или неудобна, —
  * например, в установленном PWA на iOS, где `window.print()` не работает.
@@ -11,29 +12,25 @@ import { STAT_LABELS, STAT_TYPES, countersForPlayer, countersForSet } from './st
 
 const STAT_TYPE_LIST = Object.values(STAT_TYPES)
 
+const tableHeader = `| Игрок | ${STAT_TYPE_LIST.map((type) => STAT_LABELS[type]).join(' | ')} |`
+const tableSeparator = `| --- | ${STAT_TYPE_LIST.map(() => '---:').join(' | ')} |`
+
 function playerName(player) {
   return player ? `${player.firstName} ${player.lastName}` : '—'
 }
 
-function formatCounters(counters) {
-  return STAT_TYPE_LIST.filter((type) => counters[type] > 0)
-    .map((type) => `${STAT_LABELS[type]} ${counters[type]}`)
-    .join(', ')
-}
+/** Markdown-таблица со статистикой игроков, у которых есть хотя бы один факт. */
+function statsTable(roster, countersByPlayer) {
+  const rows = roster
+    .filter((player) => countersByPlayer[player.id])
+    .filter((player) => STAT_TYPE_LIST.some((type) => countersByPlayer[player.id][type] > 0))
+    .map((player) => {
+      const counters = countersByPlayer[player.id]
+      const cells = STAT_TYPE_LIST.map((type) => counters[type] ?? 0).join(' | ')
+      return `| №${player.number} ${player.lastName} | ${cells} |`
+    })
 
-/** Строки статистики только для игроков с ненулевыми счётчиками. */
-function statRows(roster, countersByPlayer) {
-  const rows = []
-
-  for (const player of roster) {
-    const counters = countersByPlayer[player.id]
-    if (!counters) continue
-
-    const facts = formatCounters(counters)
-    if (facts) rows.push(`№${player.number} ${player.lastName}: ${facts}`)
-  }
-
-  return rows
+  return rows.length ? [tableHeader, tableSeparator, ...rows] : ['_Статистика не велась_']
 }
 
 /**
@@ -50,42 +47,35 @@ export function buildSummaryText({ state, settings = {}, roster }) {
   const opponent = settings.opponent || 'Соперник'
   const won = setsWon(state.score)
   const stats = state.stats ?? { sets: [] }
-  const lines = [`${teamName} — ${opponent}`, `Счёт: ${won.us}:${won.them}`]
+  const lines = [`# ${teamName} — ${opponent}`, '', `**Счёт: ${won.us}:${won.them}**`]
 
   for (const set of state.score.sets) {
-    lines.push('', `Партия ${set.number}: ${set.points.us}:${set.points.them}`)
-
-    const rows = statRows(roster, countersForSet(stats, set.number))
-    lines.push(...(rows.length ? rows : ['Статистика не велась']))
+    lines.push('', `## Партия ${set.number}: ${set.points.us}:${set.points.them}`)
+    lines.push('', ...statsTable(roster, countersForSet(stats, set.number)))
   }
 
-  const totalRows = roster.flatMap((player) => {
-    const facts = formatCounters(countersForPlayer(stats, player.id))
-    return facts ? [`№${player.number} ${player.lastName}: ${facts}`] : []
-  })
+  const totals = Object.fromEntries(
+    roster.map((player) => [player.id, countersForPlayer(stats, player.id)]),
+  )
 
-  lines.push('', 'За матч')
-  lines.push(...(totalRows.length ? totalRows : ['Статистика не велась']))
+  lines.push('', '## За матч')
+  lines.push('', ...statsTable(roster, totals))
 
   const exceptional = state.substitutions?.exceptional ?? []
   const retired = state.substitutions?.retired ?? []
 
   if (exceptional.length || retired.length) {
-    lines.push('')
+    lines.push('', '## Замены', '')
 
-    if (exceptional.length) {
-      lines.push('Исключительные замены')
-      for (const { outgoingId, incomingId } of exceptional) {
-        const outgoing = playerName(findPlayer(roster, outgoingId))
-        const incoming = playerName(findPlayer(roster, incomingId))
-        lines.push(`${outgoing} → ${incoming} (выбыл: ${outgoing})`)
-      }
+    for (const { outgoingId, incomingId } of exceptional) {
+      const outgoing = playerName(findPlayer(roster, outgoingId))
+      const incoming = playerName(findPlayer(roster, incomingId))
+      lines.push(`- Исключительные: ${outgoing} → ${incoming} (выбыл: ${outgoing})`)
     }
 
     if (retired.length) {
-      lines.push(
-        `Выбывшие: ${retired.map((playerId) => playerName(findPlayer(roster, playerId))).join(', ')}`,
-      )
+      const names = retired.map((playerId) => playerName(findPlayer(roster, playerId))).join(', ')
+      lines.push(`- Выбывшие: ${names}`)
     }
   }
 

@@ -172,7 +172,7 @@ function newGame() {
               >
                 <th scope="row">{{ row.player.number }} · {{ row.player.lastName }}</th>
                 <td v-for="type in STAT_TYPE_LIST" :key="type" :data-stat="type">
-                  {{ row.counters[type] }}
+                  {{ row.counters[type] ?? 0 }}
                 </td>
               </tr>
             </tbody>
@@ -204,7 +204,7 @@ function newGame() {
               <tr v-for="row in totalRows" :key="row.player.id" :data-total-player="row.player.id">
                 <th scope="row">{{ row.player.number }} · {{ row.player.lastName }}</th>
                 <td v-for="type in STAT_TYPE_LIST" :key="type" :data-stat="type">
-                  {{ row.counters[type] }}
+                  {{ row.counters[type] ?? 0 }}
                 </td>
               </tr>
             </tbody>
@@ -466,9 +466,13 @@ function newGame() {
 }
 
 .summary__actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.summary__actions > button {
+  flex: 1 1 140px;
 }
 
 .summary__status {

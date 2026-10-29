@@ -6,22 +6,34 @@
  * структура пересобирается редьюсером (см. #11).
  */
 
-/** Пять фактов, которые считает тренер. */
+/** Шесть фактов, которые считает тренер. Порядок — порядок кнопок в меню. */
 export const STAT_TYPES = {
   POINT: 'point',
   SERVE: 'serve',
-  SERVE_ERROR: 'serve_error',
-  ERROR: 'error',
   BLOCK: 'block',
+  ERROR: 'error',
+  RECEPTION_ERROR: 'reception_error',
+  SERVE_ERROR: 'serve_error',
 }
 
 /** Подписи фактов для меню игрока. */
 export const STAT_LABELS = {
-  [STAT_TYPES.POINT]: '+очко',
-  [STAT_TYPES.SERVE]: '+подача',
-  [STAT_TYPES.SERVE_ERROR]: '+ошибка на подаче',
-  [STAT_TYPES.ERROR]: '+общая ошибка',
-  [STAT_TYPES.BLOCK]: '+блок',
+  [STAT_TYPES.POINT]: 'очко',
+  [STAT_TYPES.SERVE]: 'подача',
+  [STAT_TYPES.BLOCK]: 'блок',
+  [STAT_TYPES.ERROR]: 'ошибка',
+  [STAT_TYPES.RECEPTION_ERROR]: 'ошибка в приёме',
+  [STAT_TYPES.SERVE_ERROR]: 'ошибка на подаче',
+}
+
+/** Тон факта: положительный или отрицательный — для цвета в меню. */
+export const STAT_TONES = {
+  [STAT_TYPES.POINT]: 'positive',
+  [STAT_TYPES.SERVE]: 'positive',
+  [STAT_TYPES.BLOCK]: 'positive',
+  [STAT_TYPES.ERROR]: 'negative',
+  [STAT_TYPES.RECEPTION_ERROR]: 'negative',
+  [STAT_TYPES.SERVE_ERROR]: 'negative',
 }
 
 /**
@@ -57,7 +69,7 @@ export function addStat(stats, { setNumber, playerId, type }) {
   const counters = sets[setNumber - 1][playerId] ?? emptyCounters()
   sets[setNumber - 1] = {
     ...sets[setNumber - 1],
-    [playerId]: { ...counters, [type]: counters[type] + 1 },
+    [playerId]: { ...counters, [type]: (counters[type] ?? 0) + 1 },
   }
 
   return { sets }
@@ -90,7 +102,7 @@ export function countersForPlayer(stats, playerId) {
     if (!counters) continue
 
     for (const type of Object.values(STAT_TYPES)) {
-      total[type] += counters[type]
+      total[type] += counters[type] ?? 0
     }
   }
 
