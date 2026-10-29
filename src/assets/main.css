@@ -6,40 +6,41 @@
 }
 
 :root {
-  /* Бумага и ink */
-  --paper: #eef1f4;
-  --surface: #ffffff;
-  --ink: #17222e;
-  --ink-soft: #586675;
-  --line: #d5dce4;
-  --line-strong: #b9c4cf;
+  /* Бумага и ink: тёплый судейский протокол */
+  --paper: #f4eee3;
+  --surface: #fffdf8;
+  --ink: #1c2329;
+  --ink-soft: #5f6a73;
+  --line: #d9cfc0;
+  --line-strong: #b9ad9b;
+  --control-bg: #e9e1d4;
 
   /* Прежние имена, которыми пользуются компоненты */
   --color-bg: var(--paper);
   --color-surface: var(--surface);
   --color-text: var(--ink);
   --color-muted: var(--ink-soft);
-  --color-primary: #2563eb;
-  --color-primary-ink: #ffffff;
-  --color-focus: #2563eb;
+  --color-primary: #17324a;
+  --color-primary-ink: #fffdf8;
+  --color-focus: #17324a;
 
   /* Команды, поле, ошибки */
-  --us: #3b82f6;
-  --us-deep: #2563eb;
-  --them: #ef4444;
-  --them-deep: #dc2626;
-  --court: #dfa05f;
+  --us: #2563eb;
+  --us-deep: #1d4ed8;
+  --them: #d6453d;
+  --them-deep: #b91c1c;
+  --court: #d9a25f;
   --court-deep: #b97a3e;
-  --danger: #b42318;
-  --danger-bg: #fdecea;
+  --danger: #8f3b32;
+  --danger-bg: #f6ebe7;
 
   /* Статистика: положительные и отрицательные факты */
-  --positive: #15803d;
-  --positive-bg: #f0fdf4;
-  --positive-line: #bbf7d0;
-  --negative: #b42318;
-  --negative-bg: #fef2f2;
-  --negative-line: #fecaca;
+  --positive: #4f6b3a;
+  --positive-bg: #eef2e8;
+  --positive-line: #ccd9c4;
+  --negative: #8f3b32;
+  --negative-bg: #f6ebe7;
+  --negative-line: #e5cbc5;
 
   /* Форма и ритм */
   --radius: 12px;
@@ -47,8 +48,8 @@
   --gap: 16px;
   --page-pad: 16px;
   --tap-size: 48px;
-  --shadow: 0 1px 3px rgb(16 24 40 / 10%);
-  --shadow-modal: 0 12px 32px rgb(16 24 40 / 22%);
+  --shadow: 0 1px 2px rgb(28 35 41 / 8%);
+  --shadow-modal: 0 12px 32px rgb(28 35 41 / 22%);
 
   color-scheme: light;
 }
@@ -140,7 +141,7 @@ p {
   gap: 6px;
   margin: 0;
   padding: 12px 14px 12px 30px;
-  border: 1px solid #efc9c5;
+  border: 1px solid var(--negative-line);
   border-left: 3px solid var(--danger);
   border-radius: 10px;
   background: var(--danger-bg);
@@ -210,9 +211,39 @@ button:disabled:active {
 }
 
 .button-danger {
-  border: 1.5px solid #e3b7b2;
+  border: 1.5px solid var(--negative-line);
   background: transparent;
   color: var(--danger);
+}
+
+.button-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.button-quiet--danger {
+  color: var(--danger);
+}
+
+.button-block {
+  width: 100%;
+}
+
+/* Главное действие телефона всегда в зоне большого пальца. */
+.action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--paper) 72%, rgb(244 238 227 / 0%));
+}
+
+.action-bar > button {
+  flex: 1;
 }
 
 button:focus-visible,
@@ -239,7 +270,7 @@ select:focus-visible,
 textarea:focus-visible {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px rgb(37 99 235 / 14%);
+  box-shadow: 0 0 0 4px rgb(23 50 74 / 14%);
 }
 
 input[type='radio'],
@@ -263,7 +294,7 @@ input[type='checkbox'] {
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: #e7ebf0;
+  background: var(--control-bg);
 }
 
 .segmented--compact .segmented__option {

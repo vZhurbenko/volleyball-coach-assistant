@@ -44,14 +44,6 @@ const winnerIsUs = computed(() => (set.value ? setWinner(set.value) === TEAMS.US
         <p class="set-result__score">{{ set.points.us }}:{{ set.points.them }}</p>
       </div>
 
-      <SetPointLog
-        :set="set"
-        :history="state.history"
-        :team-name="teamName"
-        :opponent="opponent"
-        tall
-      />
-
       <button
         type="button"
         class="button-block"
@@ -60,6 +52,8 @@ const winnerIsUs = computed(() => (set.value ? setWinner(set.value) === TEAMS.US
       >
         К расстановке
       </button>
+
+      <SetPointLog :set="set" :history="state.history" :team-name="teamName" :opponent="opponent" />
     </template>
 
     <p v-else>Партия ещё не завершена.</p>

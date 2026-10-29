@@ -96,7 +96,7 @@ const rows = computed(() => {
 .point-log__table thead th {
   position: sticky;
   top: 0;
-  background: #f5f7f9;
+  background: var(--paper);
   color: var(--ink-soft);
   font-size: 0.72rem;
   font-weight: 650;
@@ -112,10 +112,10 @@ const rows = computed(() => {
 }
 
 .point-log__score--us {
-  color: #3b82f6;
+  color: var(--us);
 }
 
 .point-log__score--them {
-  color: #ef4444;
+  color: var(--them);
 }
 </style>

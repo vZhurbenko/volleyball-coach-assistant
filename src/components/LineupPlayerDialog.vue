@@ -77,7 +77,7 @@ function assign(role) {
   align-items: flex-end;
   justify-content: center;
   padding: 16px;
-  background: rgb(16 24 40 / 45%);
+  background: rgb(28 35 41 / 45%);
 }
 
 .dialog {

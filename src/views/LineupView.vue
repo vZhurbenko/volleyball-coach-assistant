@@ -168,27 +168,30 @@ function startNextSet() {
         </p>
       </section>
 
+      <div class="action-bar">
+        <button
+          type="button"
+          class="button-block"
+          :disabled="!valid || (isFifthSet && !tiebreakServing)"
+          data-action="start-next-set"
+          @click="startNextSet"
+        >
+          Начать {{ nextSetNumber }}-ю партию
+        </button>
+      </div>
+    </template>
+
+    <div v-else class="action-bar">
       <button
         type="button"
         class="button-block"
-        :disabled="!valid || (isFifthSet && !tiebreakServing)"
-        data-action="start-next-set"
-        @click="startNextSet"
+        :disabled="!valid"
+        data-action="next"
+        @click="goNext"
       >
-        Начать {{ nextSetNumber }}-ю партию
+        Далее
       </button>
-    </template>
-
-    <button
-      v-else
-      type="button"
-      class="button-block"
-      :disabled="!valid"
-      data-action="next"
-      @click="goNext"
-    >
-      Далее
-    </button>
+    </div>
 
     <LineupPlayerDialog
       v-if="pickingZone !== null"

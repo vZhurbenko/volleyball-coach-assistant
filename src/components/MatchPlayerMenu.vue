@@ -56,7 +56,7 @@ const STAT_OPTIONS = Object.values(STAT_TYPES).map((type) => ({
   align-items: flex-end;
   justify-content: center;
   padding: 16px;
-  background: rgb(16 24 40 / 45%);
+  background: rgb(28 35 41 / 45%);
 }
 
 .menu {
@@ -71,7 +71,7 @@ const STAT_OPTIONS = Object.values(STAT_TYPES).map((type) => ({
   padding: 20px;
   border-radius: 16px;
   background: var(--color-surface);
-  box-shadow: 0 10px 30px rgb(16 24 40 / 25%);
+  box-shadow: var(--shadow-modal);
 }
 
 .menu h2 {
@@ -91,7 +91,7 @@ const STAT_OPTIONS = Object.values(STAT_TYPES).map((type) => ({
 
 .menu__stat {
   width: 100%;
-  border: 1px solid #d7dde5;
+  border: 1px solid var(--line);
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
