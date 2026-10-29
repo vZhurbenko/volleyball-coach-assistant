@@ -73,6 +73,17 @@ describe('buildSummaryText', () => {
     )
   })
 
+  it('puts the reception error into its own Markdown column', () => {
+    const state = stateFixture({
+      stats: { sets: [{ belov: counters({ reception_error: 1 }) }] },
+      score: { sets: [{ number: 1, points: { us: 25, them: 10 } }], serving: 'us' },
+    })
+
+    const text = buildSummaryText({ state, settings: SETTINGS, roster: ROSTER })
+
+    expect(text).toContain('| №1 Белов | 0 | 0 | 0 | 0 | 1 | 0 |')
+  })
+
   it('lists exceptional substitutions and retired players', () => {
     const state = stateFixture({
       substitutions: {
