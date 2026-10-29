@@ -36,9 +36,36 @@ export const STAT_TONES = {
   [STAT_TYPES.SERVE_ERROR]: 'negative',
 }
 
+const POINT_TYPES = Object.values(STAT_TYPES).filter(
+  (type) => STAT_TONES[type] === 'positive',
+)
+const ERROR_TYPES = Object.values(STAT_TYPES).filter(
+  (type) => STAT_TONES[type] === 'negative',
+)
+
 /**
  * @typedef {Record<string, number>} Counters — значения по каждому из `STAT_TYPES`
  */
+
+/**
+ * Сумма положительных фактов: очки, подачи и блоки.
+ *
+ * @param {Counters} counters
+ * @returns {number}
+ */
+export function pointsTotal(counters) {
+  return POINT_TYPES.reduce((total, type) => total + (counters[type] ?? 0), 0)
+}
+
+/**
+ * Сумма ошибок: ошибка, ошибка в приёме и ошибка на подаче.
+ *
+ * @param {Counters} counters
+ * @returns {number}
+ */
+export function errorsTotal(counters) {
+  return ERROR_TYPES.reduce((total, type) => total + (counters[type] ?? 0), 0)
+}
 
 /**
  * @typedef {object} MatchStats

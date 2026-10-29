@@ -8,7 +8,9 @@ import {
   countersForPlayer,
   countersForSet,
   emptyCounters,
+  errorsTotal,
   initStats,
+  pointsTotal,
 } from '../stats.js'
 
 const FACT = (setNumber, playerId, type) => ({ setNumber, playerId, type })
@@ -131,5 +133,43 @@ describe('countersForPlayer', () => {
 
   it('gives zeroes for a player in a match that has not started', () => {
     expect(countersForPlayer(initStats(), 'belov')).toEqual(emptyCounters())
+  })
+})
+
+describe('pointsTotal', () => {
+  it('sums points, serves and blocks', () => {
+    const counters = { ...emptyCounters(), point: 2, serve: 1, block: 3, error: 5 }
+
+    expect(pointsTotal(counters)).toBe(6)
+  })
+
+  it('treats missing counters as zero', () => {
+    expect(pointsTotal({ point: 1 })).toBe(1)
+  })
+
+  it('is zero for empty counters', () => {
+    expect(pointsTotal(emptyCounters())).toBe(0)
+  })
+})
+
+describe('errorsTotal', () => {
+  it('sums errors, reception errors and serve errors', () => {
+    const counters = {
+      ...emptyCounters(),
+      point: 5,
+      error: 2,
+      reception_error: 1,
+      serve_error: 3,
+    }
+
+    expect(errorsTotal(counters)).toBe(6)
+  })
+
+  it('treats missing counters as zero', () => {
+    expect(errorsTotal({ serve_error: 1 })).toBe(1)
+  })
+
+  it('is zero for empty counters', () => {
+    expect(errorsTotal(emptyCounters())).toBe(0)
   })
 })

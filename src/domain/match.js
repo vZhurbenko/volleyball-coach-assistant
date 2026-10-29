@@ -93,6 +93,35 @@ export function undoLastPoint(events) {
   return [...events.slice(0, index), ...events.slice(index + 1)]
 }
 
+/**
+ * Замены по партиям в порядке журнала. Индекс = номер партии − 1.
+ *
+ * @param {object[]} events
+ * @returns {{ outgoingId: string, incomingId: string, exceptional: boolean }[][]}
+ */
+export function substitutionsBySet(events) {
+  const bySet = []
+  let setNumber = 0
+
+  for (const event of events) {
+    if (event.type === EVENT_TYPES.SET_START) {
+      setNumber += 1
+      bySet.push([])
+      continue
+    }
+
+    if (event.type === EVENT_TYPES.SUBSTITUTION && setNumber > 0) {
+      bySet[setNumber - 1].push({
+        outgoingId: event.outgoingId,
+        incomingId: event.incomingId,
+        exceptional: event.exceptional === true,
+      })
+    }
+  }
+
+  return bySet
+}
+
 function foldEvents(events) {
   let state = null
   for (const event of events) {
