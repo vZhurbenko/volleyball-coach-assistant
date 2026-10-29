@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
@@ -8,6 +8,8 @@ import SetPointLog from '../components/SetPointLog.vue'
 import { findPlayer } from '../domain/players.js'
 import { TEAMS, setWinner, setsWon } from '../domain/score.js'
 import { STAT_LABELS, STAT_TYPES, countersForPlayer, countersForSet } from '../domain/stats.js'
+import { buildSummaryText } from '../domain/summary.js'
+import { isIosStandalone } from '../platform.js'
 import { useLineupStore } from '../stores/lineup.js'
 import { useMatchStore } from '../stores/match.js'
 
@@ -26,6 +28,10 @@ const { state, settings } = storeToRefs(matchStore)
 const { roster } = storeToRefs(lineupStore)
 
 const STAT_TYPE_LIST = Object.values(STAT_TYPES)
+
+const standalone = isIosStandalone()
+const canShare = typeof navigator.share === 'function'
+const exportStatus = ref('')
 
 const teamName = computed(() => settings.value.teamName || 'Мы')
 const opponent = computed(() => settings.value.opponent || 'Соперник')
@@ -67,12 +73,36 @@ const exceptionalSubstitutions = computed(() =>
   })),
 )
 
+const summaryText = computed(() =>
+  state.value
+    ? buildSummaryText({ state: state.value, settings: settings.value, roster: roster.value })
+    : '',
+)
+
 function playerName(player) {
   return player ? `${player.firstName} ${player.lastName}` : '—'
 }
 
 function printSummary() {
   window.print()
+}
+
+async function shareSummary() {
+  try {
+    await navigator.share({ title: 'Итоги матча', text: summaryText.value })
+    exportStatus.value = ''
+  } catch (error) {
+    if (error?.name !== 'AbortError') exportStatus.value = 'Не удалось поделиться'
+  }
+}
+
+async function copySummary() {
+  try {
+    await navigator.clipboard.writeText(summaryText.value)
+    exportStatus.value = 'Скопировано'
+  } catch {
+    exportStatus.value = 'Не удалось скопировать'
+  }
 }
 
 function newGame() {
@@ -208,8 +238,26 @@ function newGame() {
       </section>
 
       <div class="summary__actions no-print">
-        <button type="button" class="no-print" data-action="print" @click="printSummary">
+        <button
+          v-if="!standalone"
+          type="button"
+          class="no-print"
+          data-action="print"
+          @click="printSummary"
+        >
           Печать
+        </button>
+        <button
+          v-if="canShare"
+          type="button"
+          class="no-print"
+          data-action="share"
+          @click="shareSummary"
+        >
+          Поделиться
+        </button>
+        <button type="button" class="no-print" data-action="copy" @click="copySummary">
+          Скопировать
         </button>
         <button
           type="button"
@@ -220,6 +268,15 @@ function newGame() {
           Новая игра
         </button>
       </div>
+
+      <p
+        v-if="exportStatus"
+        class="summary__status no-print"
+        role="status"
+        data-field="export-status"
+      >
+        {{ exportStatus }}
+      </p>
     </template>
 
     <p v-else>Матч не найден.</p>
@@ -410,7 +467,13 @@ function newGame() {
 
 .summary__actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 8px;
+}
+
+.summary__status {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  text-align: center;
 }
 </style>
