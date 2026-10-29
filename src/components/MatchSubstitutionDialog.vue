@@ -164,7 +164,7 @@ function confirm() {
   align-items: flex-end;
   justify-content: center;
   padding: 16px;
-  background: rgb(16 24 40 / 45%);
+  background: rgb(28 35 41 / 45%);
 }
 
 .substitution {
@@ -179,7 +179,7 @@ function confirm() {
   padding: 20px;
   border-radius: 16px;
   background: var(--color-surface);
-  box-shadow: 0 10px 30px rgb(16 24 40 / 25%);
+  box-shadow: var(--shadow-modal);
 }
 
 .substitution h2 {
@@ -218,7 +218,7 @@ function confirm() {
   width: 100%;
   min-height: 44px;
   padding: 4px 10px;
-  border: 1px solid #d7dde5;
+  border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--color-surface);
   color: var(--color-text);
@@ -227,7 +227,7 @@ function confirm() {
 
 .options__item--selected {
   border-color: var(--color-primary);
-  background: #e8f0fd;
+  background: var(--paper);
 }
 
 .options__number {
@@ -255,8 +255,8 @@ function confirm() {
 .reason {
   padding: 10px 12px;
   border-radius: var(--radius);
-  background: #fdeceb;
-  color: #8a1f1a;
+  background: var(--danger-bg);
+  color: var(--danger);
   font-size: 0.9rem;
 }
 

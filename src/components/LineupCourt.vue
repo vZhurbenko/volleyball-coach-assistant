@@ -43,15 +43,41 @@ function player(zone) {
 
 <style scoped>
 .court {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  padding: 10px;
+  padding: 12px 10px 10px;
   border-radius: 14px;
   background: var(--court);
   box-shadow:
     inset 0 3px 0 #fff,
     inset 0 0 0 2px rgb(255 255 255 / 70%);
+}
+
+/* Сетка и линия атаки — чтобы площадка читалась как площадка. */
+.court::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  left: 10px;
+  height: 2px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgb(255 255 255 / 75%) 0 2px,
+    transparent 2px 10px
+  );
+}
+
+.court::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 3px);
+  right: 10px;
+  left: 10px;
+  height: 1px;
+  background: rgb(255 255 255 / 55%);
 }
 
 .court__zone {
@@ -66,7 +92,7 @@ function player(zone) {
   border: 1.5px dashed rgb(255 255 255 / 80%);
   border-radius: 10px;
   background: rgb(255 255 255 / 12%);
-  color: #3d2c1b;
+  color: var(--ink);
   font: inherit;
   text-align: center;
 }
@@ -79,7 +105,7 @@ function player(zone) {
 }
 
 .court__zone-label {
-  color: rgb(23 34 46 / 55%);
+  color: var(--ink-soft);
   font-size: 0.68rem;
   font-weight: 650;
 }
@@ -107,7 +133,7 @@ function player(zone) {
 }
 
 .court__empty {
-  color: #4a3520;
+  color: var(--ink);
   font-size: 0.78rem;
   font-weight: 600;
 }

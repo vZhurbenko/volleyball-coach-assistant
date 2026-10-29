@@ -89,29 +89,29 @@ const serving = computed(() => props.state.score.serving)
 
 /* Карточка — большая кнопка начисления очка. */
 .scoreboard__side {
-  --team-color: #3b82f6;
+  --team-color: var(--us);
 
   display: flex;
   flex-direction: column;
   min-height: 120px;
   padding: 0;
   overflow: hidden;
-  border: 0;
-  border-radius: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
   background: var(--color-surface);
-  color: #334155;
-  box-shadow: 0 2px 10px rgb(16 24 40 / 10%);
+  color: var(--ink);
+  box-shadow: var(--shadow);
   transition:
     background-color 0.18s ease,
     color 0.18s ease;
 }
 
 .scoreboard__side--us {
-  --team-color: #3b82f6;
+  --team-color: var(--us);
 }
 
 .scoreboard__side--them {
-  --team-color: #ef4444;
+  --team-color: var(--them);
 }
 
 .scoreboard__side--serving {
@@ -132,7 +132,7 @@ const serving = computed(() => props.state.score.serving)
 }
 
 .scoreboard__side:not(.scoreboard__side--serving) .scoreboard__points {
-  color: #334155;
+  color: var(--ink);
 }
 
 .scoreboard__team-bar {
@@ -143,7 +143,7 @@ const serving = computed(() => props.state.score.serving)
   min-height: 38px;
   padding: 4px 10px;
   background: transparent;
-  color: #334155;
+  color: var(--ink);
   font-size: clamp(0.9rem, 3vw, 1.05rem);
   font-weight: 600;
   transition:

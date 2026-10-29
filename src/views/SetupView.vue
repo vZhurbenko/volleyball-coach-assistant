@@ -198,7 +198,7 @@ function startGame() {
   flex-direction: column;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid #efc9c5;
+  border: 1px solid var(--negative-line);
   border-left: 3px solid var(--danger);
   border-radius: 10px;
   background: var(--danger-bg);

@@ -148,22 +148,31 @@ describe('SummaryView', () => {
     const { wrapper } = await mountView()
 
     expect(
-      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="point"]').text(),
+      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="point"] .stat-chip__value')
+        .text(),
     ).toBe('1')
     expect(
-      wrapper.get('[data-set="1"] [data-stat-player="gromov"] [data-stat="block"]').text(),
+      wrapper.get('[data-set="1"] [data-stat-player="gromov"] [data-stat="block"] .stat-chip__value')
+        .text(),
     ).toBe('1')
     expect(
-      wrapper.get('[data-set="2"] [data-stat-player="titov"] [data-stat="serve"]').text(),
+      wrapper.get('[data-set="2"] [data-stat-player="titov"] [data-stat="serve"] .stat-chip__value')
+        .text(),
     ).toBe('1')
     expect(
-      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="serve"]').text(),
-    ).toBe('0')
+      wrapper.find('[data-set="1"] [data-stat-player="titov"] [data-stat="serve"]').exists(),
+    ).toBe(false)
 
-    expect(wrapper.get('[data-total-player="titov"] [data-stat="point"]').text()).toBe('1')
-    expect(wrapper.get('[data-total-player="titov"] [data-stat="serve"]').text()).toBe('1')
-    expect(wrapper.get('[data-total-player="gromov"] [data-stat="block"]').text()).toBe('1')
-    expect(wrapper.get('[data-total-player="zhurbenko"] [data-stat="point"]').text()).toBe('0')
+    expect(
+      wrapper.get('[data-total-player="titov"] [data-stat="point"] .stat-chip__value').text(),
+    ).toBe('1')
+    expect(
+      wrapper.get('[data-total-player="titov"] [data-stat="serve"] .stat-chip__value').text(),
+    ).toBe('1')
+    expect(
+      wrapper.get('[data-total-player="gromov"] [data-stat="block"] .stat-chip__value').text(),
+    ).toBe('1')
+    expect(wrapper.find('[data-total-player="zhurbenko"]').exists()).toBe(false)
   })
 
   it('counts the reception error by set and for the match', async () => {
@@ -182,10 +191,14 @@ describe('SummaryView', () => {
     const { wrapper } = await mountView()
 
     expect(
-      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="reception_error"]').text(),
+      wrapper.get(
+        '[data-set="1"] [data-stat-player="titov"] [data-stat="reception_error"] .stat-chip__value',
+      ).text(),
     ).toBe('1')
     expect(
-      wrapper.get('[data-total-player="titov"] [data-stat="reception_error"]').text(),
+      wrapper.get(
+        '[data-total-player="titov"] [data-stat="reception_error"] .stat-chip__value',
+      ).text(),
     ).toBe('1')
   })
 

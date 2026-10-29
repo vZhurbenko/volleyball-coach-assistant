@@ -72,6 +72,7 @@ const cells = computed(() =>
     role="group"
     :aria-label="mode === 'game' ? 'Площадка в игровом режиме' : 'Расстановка на площадке'"
   >
+    <span class="court-half__net" aria-hidden="true"></span>
     <span class="court-half__attack-line" aria-hidden="true"></span>
 
     <div
@@ -123,6 +124,21 @@ const cells = computed(() =>
   left: 0;
   height: 3px;
   background: #fff;
+}
+
+/* Сетка на верхней линии: пунктир поверх белой разметки. */
+.court-half__net {
+  position: absolute;
+  top: 7px;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  height: 2px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgb(255 255 255 / 75%) 0 2px,
+    transparent 2px 10px
+  );
 }
 
 /* Трёхметровая линия: 3 м из 9 м половины площадки. */

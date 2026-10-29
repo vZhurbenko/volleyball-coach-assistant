@@ -113,34 +113,36 @@ function resetMatch() {
 
       <MatchCourt :state="state" :roster="roster" :mode="courtMode" @select="openPlayer" />
 
-      <button
-        v-if="!setOver"
-        type="button"
-        class="button-block"
-        data-action="open-substitution"
-        @click="substitutionOpen = true"
-      >
-        Замена · осталось {{ substitutionsLeft }}
-      </button>
+      <div class="match-controls">
+        <button
+          v-if="!setOver"
+          type="button"
+          class="button-block"
+          data-action="open-substitution"
+          @click="substitutionOpen = true"
+        >
+          Замена · осталось {{ substitutionsLeft }}
+        </button>
 
-      <div class="match-actions">
-        <button
-          type="button"
-          class="button-secondary"
-          :disabled="!canUndo"
-          data-action="undo"
-          @click="matchStore.undo"
-        >
-          Отменить очко
-        </button>
-        <button
-          type="button"
-          class="button-secondary button-secondary--danger"
-          data-action="reset"
-          @click="confirmingReset = true"
-        >
-          Сбросить
-        </button>
+        <div class="match-actions">
+          <button
+            type="button"
+            class="button-secondary"
+            :disabled="!canUndo"
+            data-action="undo"
+            @click="matchStore.undo"
+          >
+            Отменить очко
+          </button>
+          <button
+            type="button"
+            class="button-quiet button-quiet--danger"
+            data-action="reset"
+            @click="confirmingReset = true"
+          >
+            Сбросить
+          </button>
+        </div>
       </div>
 
       <MatchPlayerMenu
@@ -233,7 +235,7 @@ function resetMatch() {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgb(16 24 40 / 45%);
+  background: rgb(28 35 41 / 45%);
 }
 
 .set-end-modal {
@@ -263,6 +265,17 @@ function resetMatch() {
   width: 100%;
 }
 
+.match-controls {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--paper) 72%, rgb(244 238 227 / 0%));
+}
+
 .court-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -270,7 +283,7 @@ function resetMatch() {
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #e7ebf0;
+  background: var(--control-bg);
 }
 
 .court-switch__option {
@@ -295,17 +308,12 @@ function resetMatch() {
   gap: 8px;
 }
 
-.button-secondary--danger {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
 .reset-confirm {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border: 1px solid #efc9c5;
+  border: 1px solid var(--negative-line);
   border-left: 3px solid var(--danger);
   border-radius: 10px;
   background: var(--danger-bg);

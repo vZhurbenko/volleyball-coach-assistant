@@ -7,7 +7,7 @@ import { useRouter } from 'vue-router'
 import SetPointLog from '../components/SetPointLog.vue'
 import { findPlayer } from '../domain/players.js'
 import { TEAMS, setWinner, setsWon } from '../domain/score.js'
-import { STAT_LABELS, STAT_TYPES, countersForPlayer, countersForSet } from '../domain/stats.js'
+import { STAT_LABELS, STAT_TONES, STAT_TYPES, countersForPlayer, countersForSet } from '../domain/stats.js'
 import { buildSummaryText } from '../domain/summary.js'
 import { isIosStandalone } from '../platform.js'
 import { useLineupStore } from '../stores/lineup.js'
@@ -39,11 +39,17 @@ const sets = computed(() => state.value?.score.sets ?? [])
 const won = computed(() => (state.value ? setsWon(state.value.score) : { us: 0, them: 0 }))
 const stats = computed(() => state.value?.stats ?? { sets: [] })
 
+function hasFacts(counters) {
+  return STAT_TYPE_LIST.some((type) => (counters[type] ?? 0) > 0)
+}
+
 function counterRows(countersByPlayer) {
-  return roster.value.filter((player) => countersByPlayer[player.id]).map((player) => ({
-    player,
-    counters: countersByPlayer[player.id],
-  }))
+  return roster.value
+    .filter((player) => countersByPlayer[player.id] && hasFacts(countersByPlayer[player.id]))
+    .map((player) => ({
+      player,
+      counters: countersByPlayer[player.id],
+    }))
 }
 
 const setSections = computed(() =>
@@ -54,10 +60,12 @@ const setSections = computed(() =>
 )
 
 const totalRows = computed(() =>
-  roster.value.map((player) => ({
-    player,
-    counters: countersForPlayer(stats.value, player.id),
-  })),
+  roster.value
+    .map((player) => ({
+      player,
+      counters: countersForPlayer(stats.value, player.id),
+    }))
+    .filter(({ counters }) => hasFacts(counters)),
 )
 
 const retiredPlayers = computed(() =>
@@ -141,6 +149,39 @@ function newGame() {
         </ol>
       </section>
 
+      <div class="summary__actions no-print" data-field="summary-actions">
+        <button
+          v-if="!standalone"
+          type="button"
+          class="button-secondary no-print"
+          data-action="print"
+          @click="printSummary"
+        >
+          Печать
+        </button>
+        <button
+          v-if="canShare"
+          type="button"
+          class="no-print"
+          data-action="share"
+          @click="shareSummary"
+        >
+          Поделиться
+        </button>
+        <button type="button" class="no-print" data-action="copy" @click="copySummary">
+          Скопировать
+        </button>
+      </div>
+
+      <p
+        v-if="exportStatus"
+        class="summary__status no-print"
+        role="status"
+        data-field="export-status"
+      >
+        {{ exportStatus }}
+      </p>
+
       <section
         v-for="section in setSections"
         :key="section.set.number"
@@ -154,29 +195,30 @@ function newGame() {
           </span>
         </div>
 
-        <div v-if="section.rows.length" class="table-wrap">
-          <table class="stats-table">
-            <thead>
-              <tr>
-                <th scope="col">Игрок</th>
-                <th v-for="type in STAT_TYPE_LIST" :key="type" scope="col">
-                  {{ STAT_LABELS[type] }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in section.rows"
-                :key="row.player.id"
-                :data-stat-player="row.player.id"
-              >
-                <th scope="row">{{ row.player.number }} · {{ row.player.lastName }}</th>
-                <td v-for="type in STAT_TYPE_LIST" :key="type" :data-stat="type">
-                  {{ row.counters[type] ?? 0 }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-if="section.rows.length" class="stat-lines">
+          <div
+            v-for="row in section.rows"
+            :key="row.player.id"
+            class="stat-line"
+            :data-stat-player="row.player.id"
+          >
+            <span class="stat-line__player">
+              №{{ row.player.number }} {{ row.player.lastName }}
+            </span>
+            <span class="stat-line__facts">
+              <template v-for="type in STAT_TYPE_LIST" :key="type">
+                <span
+                  v-if="(row.counters[type] ?? 0) > 0"
+                  class="stat-chip"
+                  :data-stat="type"
+                  :data-tone="STAT_TONES[type]"
+                >
+                  <span class="stat-chip__label">{{ STAT_LABELS[type] }}</span>
+                  <span class="stat-chip__value">{{ row.counters[type] ?? 0 }}</span>
+                </span>
+              </template>
+            </span>
+          </div>
         </div>
         <p v-else class="summary__empty">Статистика не велась</p>
 
@@ -190,26 +232,32 @@ function newGame() {
 
       <section class="summary__card board" data-field="total-stats">
         <h2>За матч</h2>
-        <div class="table-wrap">
-          <table class="stats-table">
-            <thead>
-              <tr>
-                <th scope="col">Игрок</th>
-                <th v-for="type in STAT_TYPE_LIST" :key="type" scope="col">
-                  {{ STAT_LABELS[type] }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in totalRows" :key="row.player.id" :data-total-player="row.player.id">
-                <th scope="row">{{ row.player.number }} · {{ row.player.lastName }}</th>
-                <td v-for="type in STAT_TYPE_LIST" :key="type" :data-stat="type">
-                  {{ row.counters[type] ?? 0 }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-if="totalRows.length" class="stat-lines">
+          <div
+            v-for="row in totalRows"
+            :key="row.player.id"
+            class="stat-line"
+            :data-total-player="row.player.id"
+          >
+            <span class="stat-line__player">
+              №{{ row.player.number }} {{ row.player.lastName }}
+            </span>
+            <span class="stat-line__facts">
+              <template v-for="type in STAT_TYPE_LIST" :key="type">
+                <span
+                  v-if="(row.counters[type] ?? 0) > 0"
+                  class="stat-chip"
+                  :data-stat="type"
+                  :data-tone="STAT_TONES[type]"
+                >
+                  <span class="stat-chip__label">{{ STAT_LABELS[type] }}</span>
+                  <span class="stat-chip__value">{{ row.counters[type] ?? 0 }}</span>
+                </span>
+              </template>
+            </span>
+          </div>
         </div>
+        <p v-else class="summary__empty">Статистика не велась</p>
       </section>
 
       <section
@@ -237,28 +285,7 @@ function newGame() {
         </div>
       </section>
 
-      <div class="summary__actions no-print">
-        <button
-          v-if="!standalone"
-          type="button"
-          class="no-print"
-          data-action="print"
-          @click="printSummary"
-        >
-          Печать
-        </button>
-        <button
-          v-if="canShare"
-          type="button"
-          class="no-print"
-          data-action="share"
-          @click="shareSummary"
-        >
-          Поделиться
-        </button>
-        <button type="button" class="no-print" data-action="copy" @click="copySummary">
-          Скопировать
-        </button>
+      <div class="summary__finish no-print">
         <button
           type="button"
           class="button-secondary no-print"
@@ -268,15 +295,6 @@ function newGame() {
           Новая игра
         </button>
       </div>
-
-      <p
-        v-if="exportStatus"
-        class="summary__status no-print"
-        role="status"
-        data-field="export-status"
-      >
-        {{ exportStatus }}
-      </p>
     </template>
 
     <p v-else>Матч не найден.</p>
@@ -419,43 +437,64 @@ function newGame() {
   font-size: 0.85rem;
 }
 
-.table-wrap {
-  overflow-x: auto;
+.stat-lines {
+  display: flex;
+  flex-direction: column;
 }
 
-.stats-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.stats-table th,
-.stats-table td {
-  padding: 6px 8px;
+.stat-line {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 0;
   border-bottom: 1px solid var(--line);
-  text-align: left;
-  white-space: nowrap;
 }
 
-.stats-table td,
-.stats-table th:not(:first-child) {
-  text-align: center;
-}
-
-.stats-table thead th {
-  color: var(--ink-soft);
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-}
-
-.stats-table tbody th {
-  font-weight: 650;
-}
-
-.stats-table tbody tr:last-child td,
-.stats-table tbody tr:last-child th {
+.stat-line:last-child {
   border-bottom: 0;
+}
+
+.stat-line__player {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.stat-line__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.stat-chip[data-tone='positive'] {
+  border-color: var(--positive-line);
+  background: var(--positive-bg);
+  color: var(--positive);
+}
+
+.stat-chip[data-tone='negative'] {
+  border-color: var(--negative-line);
+  background: var(--negative-bg);
+  color: var(--negative);
+}
+
+.stat-chip__label {
+  font-weight: 600;
+}
+
+.stat-chip__value {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary__card ul {
@@ -473,6 +512,10 @@ function newGame() {
 
 .summary__actions > button {
   flex: 1 1 140px;
+}
+
+.summary__finish button {
+  width: 100%;
 }
 
 .summary__status {
