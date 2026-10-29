@@ -1,6 +1,6 @@
 <script setup>
 import { ROLE_LABELS } from '../domain/constants.js'
-import { STAT_LABELS, STAT_TYPES } from '../domain/stats.js'
+import { STAT_LABELS, STAT_TONES, STAT_TYPES } from '../domain/stats.js'
 
 defineProps({
   player: { type: Object, required: true },
@@ -11,6 +11,7 @@ const emit = defineEmits(['stat', 'close'])
 const STAT_OPTIONS = Object.values(STAT_TYPES).map((type) => ({
   type,
   label: STAT_LABELS[type],
+  tone: STAT_TONES[type],
 }))
 </script>
 
@@ -27,6 +28,7 @@ const STAT_OPTIONS = Object.values(STAT_TYPES).map((type) => ({
           type="button"
           class="menu__stat"
           :data-stat="option.type"
+          :data-tone="option.tone"
           @click="emit('stat', option.type)"
         >
           {{ option.label }}
@@ -93,6 +95,18 @@ const STAT_OPTIONS = Object.values(STAT_TYPES).map((type) => ({
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
+}
+
+.menu__stat[data-tone='positive'] {
+  border-color: var(--positive-line);
+  background: var(--positive-bg);
+  color: var(--positive);
+}
+
+.menu__stat[data-tone='negative'] {
+  border-color: var(--negative-line);
+  background: var(--negative-bg);
+  color: var(--negative);
 }
 
 .menu .button-secondary {

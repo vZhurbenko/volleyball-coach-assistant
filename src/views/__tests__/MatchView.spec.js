@@ -229,7 +229,7 @@ describe('MatchView player stats menu', () => {
     await wrapper.get(`[data-zone="${zone}"]`).trigger('click')
   }
 
-  it('shows the five facts for the tapped player', async () => {
+  it('shows the six facts for the tapped player', async () => {
     saveWith([SET_START])
     const { wrapper } = await mountView()
 
@@ -240,6 +240,26 @@ describe('MatchView player stats menu', () => {
     for (const label of Object.values(STAT_LABELS)) {
       expect(dialog.text()).toContain(label)
     }
+  })
+
+  it('marks positive and negative facts with tones', async () => {
+    saveWith([SET_START])
+    const { wrapper } = await mountView()
+
+    await openMenu(wrapper)
+
+    const tones = wrapper
+      .findAll('[role="dialog"] [data-stat]')
+      .map((button) => button.attributes('data-tone'))
+
+    expect(tones).toEqual([
+      'positive',
+      'positive',
+      'positive',
+      'negative',
+      'negative',
+      'negative',
+    ])
   })
 
   it('writes every stat button to the journal and closes the menu', async () => {

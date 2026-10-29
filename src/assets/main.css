@@ -33,6 +33,14 @@
   --danger: #b42318;
   --danger-bg: #fdecea;
 
+  /* Статистика: положительные и отрицательные факты */
+  --positive: #15803d;
+  --positive-bg: #f0fdf4;
+  --positive-line: #bbf7d0;
+  --negative: #b42318;
+  --negative-bg: #fef2f2;
+  --negative-line: #fecaca;
+
   /* Форма и ритм */
   --radius: 12px;
   --radius-sm: 8px;
