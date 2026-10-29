@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
 
 import { defaultLineup } from '../lineup.js'
-import { EVENT_TYPES, matchState, playersOnCourt, undoLastPoint } from '../match.js'
+import {
+  EVENT_TYPES,
+  matchState,
+  playersOnCourt,
+  substitutionsBySet,
+  undoLastPoint,
+} from '../match.js'
 import { MOCK_ROSTER } from './fixtures/roster.js'
 import { TEAMS, currentSet, isSetOver } from '../score.js'
 
@@ -264,5 +270,37 @@ describe('undoLastPoint', () => {
 
     expect(state.substitutions.used).toBe(1)
     expect(playersOnCourt(state)[3]).toBe('tikhonov')
+  })
+})
+
+describe('substitutionsBySet', () => {
+  it('groups substitutions by set in journal order', () => {
+    const journal = [
+      setStart(),
+      substitution('belov', 'sokolov'),
+      point(TEAMS.US),
+      substitution('sokolov', 'morozov', true),
+      setStart(TEAMS.THEM),
+      substitution('zimin', 'belov'),
+    ]
+
+    expect(substitutionsBySet(journal)).toEqual([
+      [
+        { outgoingId: 'belov', incomingId: 'sokolov', exceptional: false },
+        { outgoingId: 'sokolov', incomingId: 'morozov', exceptional: true },
+      ],
+      [{ outgoingId: 'zimin', incomingId: 'belov', exceptional: false }],
+    ])
+  })
+
+  it('keeps an empty list for a set without substitutions', () => {
+    expect(substitutionsBySet([setStart(), point(TEAMS.US), setStart(TEAMS.THEM)])).toEqual([
+      [],
+      [],
+    ])
+  })
+
+  it('ignores substitutions before the first set', () => {
+    expect(substitutionsBySet([substitution('belov', 'sokolov'), setStart()])).toEqual([[]])
   })
 })

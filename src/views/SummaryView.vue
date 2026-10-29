@@ -5,10 +5,19 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 
 import SetPointLog from '../components/SetPointLog.vue'
+import { substitutionsBySet } from '../domain/match.js'
 import { findPlayer } from '../domain/players.js'
 import { TEAMS, setWinner, setsWon } from '../domain/score.js'
-import { STAT_LABELS, STAT_TONES, STAT_TYPES, countersForPlayer, countersForSet } from '../domain/stats.js'
+import {
+  STAT_LABELS,
+  STAT_TYPES,
+  countersForPlayer,
+  countersForSet,
+  errorsTotal,
+  pointsTotal,
+} from '../domain/stats.js'
 import { buildSummaryText } from '../domain/summary.js'
+import { buildPdfFilename, generateSummaryPdf, savePdf } from '../pdf.js'
 import { isIosStandalone } from '../platform.js'
 import { useLineupStore } from '../stores/lineup.js'
 import { useMatchStore } from '../stores/match.js'
@@ -24,7 +33,7 @@ matchStore.load(props.storage)
 const lineupStore = useLineupStore()
 lineupStore.load(props.storage)
 
-const { state, settings } = storeToRefs(matchStore)
+const { events, state, settings } = storeToRefs(matchStore)
 const { roster } = storeToRefs(lineupStore)
 
 const STAT_TYPE_LIST = Object.values(STAT_TYPES)
@@ -32,6 +41,8 @@ const STAT_TYPE_LIST = Object.values(STAT_TYPES)
 const standalone = isIosStandalone()
 const canShare = typeof navigator.share === 'function'
 const exportStatus = ref('')
+const isGenerating = ref(false)
+const summaryElement = ref(null)
 
 const teamName = computed(() => settings.value.teamName || 'Мы')
 const opponent = computed(() => settings.value.opponent || 'Соперник')
@@ -39,45 +50,29 @@ const sets = computed(() => state.value?.score.sets ?? [])
 const won = computed(() => (state.value ? setsWon(state.value.score) : { us: 0, them: 0 }))
 const stats = computed(() => state.value?.stats ?? { sets: [] })
 
-function hasFacts(counters) {
-  return STAT_TYPE_LIST.some((type) => (counters[type] ?? 0) > 0)
-}
-
 function counterRows(countersByPlayer) {
   return roster.value
-    .filter((player) => countersByPlayer[player.id] && hasFacts(countersByPlayer[player.id]))
+    .filter((player) => countersByPlayer[player.id])
     .map((player) => ({
       player,
       counters: countersByPlayer[player.id],
     }))
 }
 
+const substitutionLog = computed(() => substitutionsBySet(events.value))
+
 const setSections = computed(() =>
   sets.value.map((set) => ({
     set,
     rows: counterRows(countersForSet(stats.value, set.number)),
+    substitutions: substitutionLog.value[set.number - 1] ?? [],
   })),
 )
 
 const totalRows = computed(() =>
-  roster.value
-    .map((player) => ({
-      player,
-      counters: countersForPlayer(stats.value, player.id),
-    }))
-    .filter(({ counters }) => hasFacts(counters)),
-)
-
-const retiredPlayers = computed(() =>
-  (state.value?.substitutions.retired ?? [])
-    .map((playerId) => findPlayer(roster.value, playerId))
-    .filter(Boolean),
-)
-
-const exceptionalSubstitutions = computed(() =>
-  (state.value?.substitutions.exceptional ?? []).map(({ outgoingId, incomingId }) => ({
-    outgoing: findPlayer(roster.value, outgoingId),
-    incoming: findPlayer(roster.value, incomingId),
+  roster.value.map((player) => ({
+    player,
+    counters: countersForPlayer(stats.value, player.id),
   })),
 )
 
@@ -113,6 +108,23 @@ async function copySummary() {
   }
 }
 
+async function downloadPdf() {
+  if (isGenerating.value) return
+
+  isGenerating.value = true
+  exportStatus.value = ''
+
+  try {
+    const filename = buildPdfFilename()
+    const blob = await generateSummaryPdf(summaryElement.value, { filename, singlePage: true })
+    await savePdf(blob, filename)
+  } catch (error) {
+    if (error?.name !== 'AbortError') exportStatus.value = 'Не удалось создать PDF'
+  } finally {
+    isGenerating.value = false
+  }
+}
+
 function newGame() {
   matchStore.reset()
   lineupStore.reset()
@@ -121,7 +133,7 @@ function newGame() {
 </script>
 
 <template>
-  <section class="screen summary">
+  <section ref="summaryElement" class="screen summary" data-field="pdf-summary">
     <h1>Итоги матча</h1>
 
     <template v-if="state">
@@ -150,6 +162,15 @@ function newGame() {
       </section>
 
       <div class="summary__actions no-print" data-field="summary-actions">
+        <button
+          type="button"
+          class="no-print"
+          data-action="pdf"
+          :disabled="isGenerating"
+          @click="downloadPdf"
+        >
+          {{ isGenerating ? 'Генерация…' : 'Скачать PDF' }}
+        </button>
         <button
           v-if="!standalone"
           type="button"
@@ -195,30 +216,33 @@ function newGame() {
           </span>
         </div>
 
-        <div v-if="section.rows.length" class="stat-lines">
-          <div
-            v-for="row in section.rows"
-            :key="row.player.id"
-            class="stat-line"
-            :data-stat-player="row.player.id"
-          >
-            <span class="stat-line__player">
-              №{{ row.player.number }} {{ row.player.lastName }}
-            </span>
-            <span class="stat-line__facts">
-              <template v-for="type in STAT_TYPE_LIST" :key="type">
-                <span
-                  v-if="(row.counters[type] ?? 0) > 0"
-                  class="stat-chip"
-                  :data-stat="type"
-                  :data-tone="STAT_TONES[type]"
-                >
-                  <span class="stat-chip__label">{{ STAT_LABELS[type] }}</span>
-                  <span class="stat-chip__value">{{ row.counters[type] ?? 0 }}</span>
-                </span>
-              </template>
-            </span>
-          </div>
+        <div v-if="section.rows.length" class="table-wrap">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th scope="col">Игрок</th>
+                <th v-for="type in STAT_TYPE_LIST" :key="type" scope="col">
+                  {{ STAT_LABELS[type] }}
+                </th>
+                <th scope="col">Итого ошибок</th>
+                <th scope="col">Итого очков</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="row in section.rows"
+                :key="row.player.id"
+                :data-stat-player="row.player.id"
+              >
+                <th scope="row">{{ row.player.number }} · {{ row.player.lastName }}</th>
+                <td v-for="type in STAT_TYPE_LIST" :key="type" :data-stat="type">
+                  {{ row.counters[type] ?? 0 }}
+                </td>
+                <td data-stat-total="errors">{{ errorsTotal(row.counters) }}</td>
+                <td data-stat-total="points">{{ pointsTotal(row.counters) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <p v-else class="summary__empty">Статистика не велась</p>
 
@@ -228,61 +252,50 @@ function newGame() {
           :team-name="teamName"
           :opponent="opponent"
         />
+
+        <div
+          v-if="section.substitutions.length"
+          class="summary__subs"
+          data-field="set-substitutions"
+        >
+          <h3>Замены в партии</h3>
+          <ul>
+            <li v-for="(sub, index) in section.substitutions" :key="index">
+              {{ playerName(findPlayer(roster, sub.outgoingId)) }} →
+              {{ playerName(findPlayer(roster, sub.incomingId)) }}
+              <span v-if="sub.exceptional" class="summary__subs-note">(исключительная)</span>
+            </li>
+          </ul>
+        </div>
       </section>
 
       <section class="summary__card board" data-field="total-stats">
         <h2>За матч</h2>
-        <div v-if="totalRows.length" class="stat-lines">
-          <div
-            v-for="row in totalRows"
-            :key="row.player.id"
-            class="stat-line"
-            :data-total-player="row.player.id"
-          >
-            <span class="stat-line__player">
-              №{{ row.player.number }} {{ row.player.lastName }}
-            </span>
-            <span class="stat-line__facts">
-              <template v-for="type in STAT_TYPE_LIST" :key="type">
-                <span
-                  v-if="(row.counters[type] ?? 0) > 0"
-                  class="stat-chip"
-                  :data-stat="type"
-                  :data-tone="STAT_TONES[type]"
-                >
-                  <span class="stat-chip__label">{{ STAT_LABELS[type] }}</span>
-                  <span class="stat-chip__value">{{ row.counters[type] ?? 0 }}</span>
-                </span>
-              </template>
-            </span>
-          </div>
+        <div v-if="totalRows.length" class="table-wrap">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th scope="col">Игрок</th>
+                <th v-for="type in STAT_TYPE_LIST" :key="type" scope="col">
+                  {{ STAT_LABELS[type] }}
+                </th>
+                <th scope="col">Итого ошибок</th>
+                <th scope="col">Итого очков</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in totalRows" :key="row.player.id" :data-total-player="row.player.id">
+                <th scope="row">{{ row.player.number }} · {{ row.player.lastName }}</th>
+                <td v-for="type in STAT_TYPE_LIST" :key="type" :data-stat="type">
+                  {{ row.counters[type] ?? 0 }}
+                </td>
+                <td data-stat-total="errors">{{ errorsTotal(row.counters) }}</td>
+                <td data-stat-total="points">{{ pointsTotal(row.counters) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <p v-else class="summary__empty">Статистика не велась</p>
-      </section>
-
-      <section
-        v-if="retiredPlayers.length || exceptionalSubstitutions.length"
-        class="summary__card board"
-        data-field="substitutions"
-      >
-        <h2>Замены</h2>
-
-        <div v-if="exceptionalSubstitutions.length" data-field="exceptional-substitutions">
-          <h3>Исключительные</h3>
-          <ul>
-            <li v-for="(sub, index) in exceptionalSubstitutions" :key="index">
-              {{ playerName(sub.outgoing) }} → {{ playerName(sub.incoming) }} (выбыл:
-              {{ playerName(sub.outgoing) }})
-            </li>
-          </ul>
-        </div>
-
-        <div v-if="retiredPlayers.length" data-field="retired">
-          <h3>Выбывшие</h3>
-          <ul>
-            <li v-for="player in retiredPlayers" :key="player.id">{{ playerName(player) }}</li>
-          </ul>
-        </div>
       </section>
 
       <div class="summary__finish no-print">
@@ -437,64 +450,80 @@ function newGame() {
   font-size: 0.85rem;
 }
 
-.stat-lines {
+.summary__subs {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
-.stat-line {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 9px 0;
+.summary__subs-note {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.stats-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 6px;
   border-bottom: 1px solid var(--line);
+  text-align: left;
 }
 
-.stat-line:last-child {
+.stats-table th:first-child {
+  width: 22%;
+}
+
+.stats-table th:not(:first-child) {
+  width: 9.75%;
+}
+
+.stats-table td,
+.stats-table th:not(:first-child) {
+  text-align: center;
+}
+
+.stats-table thead th {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  white-space: normal;
+}
+
+.stats-table tbody th {
+  font-weight: 650;
+  white-space: normal;
+}
+
+.stats-table td {
+  white-space: nowrap;
+}
+
+.stats-table tbody tr:last-child td,
+.stats-table tbody tr:last-child th {
   border-bottom: 0;
 }
 
-.stat-line__player {
-  font-size: 0.88rem;
-  font-weight: 700;
+.stats-table th:nth-last-child(2),
+.stats-table td:nth-last-child(2) {
+  border-left: 1px solid var(--line);
 }
 
-.stat-line__facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.stat-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 3px 8px;
-  border: 1px solid;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  line-height: 1.35;
-}
-
-.stat-chip[data-tone='positive'] {
-  border-color: var(--positive-line);
-  background: var(--positive-bg);
-  color: var(--positive);
-}
-
-.stat-chip[data-tone='negative'] {
-  border-color: var(--negative-line);
-  background: var(--negative-bg);
-  color: var(--negative);
-}
-
-.stat-chip__label {
-  font-weight: 600;
-}
-
-.stat-chip__value {
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
+.stats-table [data-stat-total] {
+  background: var(--paper);
+  font-weight: 750;
 }
 
 .summary__card ul {

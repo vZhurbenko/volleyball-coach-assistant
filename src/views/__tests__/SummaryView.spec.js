@@ -12,8 +12,15 @@ import { EVENT_TYPES } from '../../domain/match.js'
 import { TEAM_ROSTER } from '../../domain/__tests__/fixtures/team-roster.js'
 import { TEAMS } from '../../domain/score.js'
 import { STAT_TYPES } from '../../domain/stats.js'
+import { buildPdfFilename, generateSummaryPdf, savePdf } from '../../pdf.js'
 import { loadMatch, saveMatch, saveRosterSettings } from '../../storage.js'
 import SummaryView from '../SummaryView.vue'
+
+vi.mock('../../pdf.js', () => ({
+  buildPdfFilename: vi.fn(),
+  generateSummaryPdf: vi.fn(),
+  savePdf: vi.fn(),
+}))
 
 const LINEUP = defaultLineup(TEAM_ROSTER)
 
@@ -114,6 +121,11 @@ async function mountView() {
 let storage
 
 beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(buildPdfFilename).mockReturnValue('match-summary-2026-10-29.pdf')
+  vi.mocked(generateSummaryPdf).mockResolvedValue(new Blob(['pdf'], { type: 'application/pdf' }))
+  vi.mocked(savePdf).mockResolvedValue('downloaded')
+
   storage = fakeStorage()
   saveRosterSettings({ players: TEAM_ROSTER, defaultLineup: LINEUP }, storage)
   saveFinished(storage)
@@ -148,31 +160,62 @@ describe('SummaryView', () => {
     const { wrapper } = await mountView()
 
     expect(
-      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="point"] .stat-chip__value')
-        .text(),
+      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="point"]').text(),
     ).toBe('1')
     expect(
-      wrapper.get('[data-set="1"] [data-stat-player="gromov"] [data-stat="block"] .stat-chip__value')
-        .text(),
+      wrapper.get('[data-set="1"] [data-stat-player="gromov"] [data-stat="block"]').text(),
     ).toBe('1')
     expect(
-      wrapper.get('[data-set="2"] [data-stat-player="titov"] [data-stat="serve"] .stat-chip__value')
-        .text(),
+      wrapper.get('[data-set="2"] [data-stat-player="titov"] [data-stat="serve"]').text(),
     ).toBe('1')
     expect(
-      wrapper.find('[data-set="1"] [data-stat-player="titov"] [data-stat="serve"]').exists(),
-    ).toBe(false)
+      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="serve"]').text(),
+    ).toBe('0')
+
+    expect(wrapper.get('[data-total-player="titov"] [data-stat="point"]').text()).toBe('1')
+    expect(wrapper.get('[data-total-player="titov"] [data-stat="serve"]').text()).toBe('1')
+    expect(wrapper.get('[data-total-player="gromov"] [data-stat="block"]').text()).toBe('1')
+    expect(wrapper.get('[data-total-player="zhurbenko"] [data-stat="point"]').text()).toBe('0')
+  })
+
+  it('adds the points and errors totals to every table', async () => {
+    const { wrapper } = await mountView()
 
     expect(
-      wrapper.get('[data-total-player="titov"] [data-stat="point"] .stat-chip__value').text(),
+      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat-total="points"]').text(),
     ).toBe('1')
     expect(
-      wrapper.get('[data-total-player="titov"] [data-stat="serve"] .stat-chip__value').text(),
-    ).toBe('1')
+      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat-total="errors"]').text(),
+    ).toBe('0')
     expect(
-      wrapper.get('[data-total-player="gromov"] [data-stat="block"] .stat-chip__value').text(),
-    ).toBe('1')
-    expect(wrapper.find('[data-total-player="zhurbenko"]').exists()).toBe(false)
+      wrapper.get('[data-total-player="titov"] [data-stat-total="points"]').text(),
+    ).toBe('2')
+    expect(
+      wrapper.get('[data-total-player="titov"] [data-stat-total="errors"]').text(),
+    ).toBe('0')
+  })
+
+  it('renders the stats as a table with the two totals columns', async () => {
+    const { wrapper } = await mountView()
+
+    const headers = wrapper
+      .get('[data-field="total-stats"] thead tr')
+      .findAll('th')
+      .map((cell) => cell.text())
+
+    expect(headers).toEqual([
+      'Игрок',
+      'очко',
+      'подача',
+      'блок',
+      'ошибка',
+      'ошибка в приёме',
+      'ошибка на подаче',
+      'Итого ошибок',
+      'Итого очков',
+    ])
+    expect(wrapper.get('[data-field="total-stats"] table').classes()).toContain('stats-table')
+    expect(wrapper.get('[data-field="total-stats"] .table-wrap').exists()).toBe(true)
   })
 
   it('counts the reception error by set and for the match', async () => {
@@ -191,14 +234,16 @@ describe('SummaryView', () => {
     const { wrapper } = await mountView()
 
     expect(
-      wrapper.get(
-        '[data-set="1"] [data-stat-player="titov"] [data-stat="reception_error"] .stat-chip__value',
-      ).text(),
+      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat="reception_error"]').text(),
     ).toBe('1')
     expect(
-      wrapper.get(
-        '[data-total-player="titov"] [data-stat="reception_error"] .stat-chip__value',
-      ).text(),
+      wrapper.get('[data-total-player="titov"] [data-stat="reception_error"]').text(),
+    ).toBe('1')
+    expect(
+      wrapper.get('[data-set="1"] [data-stat-player="titov"] [data-stat-total="errors"]').text(),
+    ).toBe('1')
+    expect(
+      wrapper.get('[data-total-player="titov"] [data-stat-total="errors"]').text(),
     ).toBe('1')
   })
 
@@ -214,7 +259,7 @@ describe('SummaryView', () => {
     expect(logs[1].text().indexOf('Наши')).toBeLessThan(logs[1].text().indexOf('Динамо'))
   })
 
-  it('marks the exceptional substitutions and the retired players', async () => {
+  it('keeps the exceptional substitution in the set card only', async () => {
     saveFinished(storage, [
       ...playedSet({
         serving: TEAMS.US,
@@ -241,10 +286,55 @@ describe('SummaryView', () => {
 
     const { wrapper } = await mountView()
 
-    expect(wrapper.get('[data-field="retired"]').text()).toContain('Горобченко')
-    const exceptional = wrapper.get('[data-field="exceptional-substitutions"]')
-    expect(exceptional.text()).toContain('Горобченко')
-    expect(exceptional.text()).toContain('Емельянов')
+    const substitutions = wrapper.get('[data-set="1"] [data-field="set-substitutions"]')
+    expect(substitutions.text()).toContain('Горобченко')
+    expect(substitutions.text()).toContain('Емельянов')
+    expect(substitutions.text()).toContain('исключительная')
+
+    expect(wrapper.find('[data-field="substitutions"]').exists()).toBe(false)
+    expect(wrapper.find('[data-field="retired"]').exists()).toBe(false)
+    expect(wrapper.find('[data-field="exceptional-substitutions"]').exists()).toBe(false)
+  })
+
+  it('lists the substitutions of every set after the point log', async () => {
+    saveFinished(storage, [
+      ...playedSet({
+        serving: TEAMS.US,
+        us: 25,
+        them: 10,
+        prefix: [
+          {
+            type: EVENT_TYPES.SUBSTITUTION,
+            outgoingId: 'titov',
+            incomingId: 'gorobchenko',
+          },
+          {
+            type: EVENT_TYPES.SUBSTITUTION,
+            outgoingId: 'gorobchenko',
+            incomingId: 'emelyanov',
+            exceptional: true,
+          },
+        ],
+      }),
+      ...playedSet({ serving: TEAMS.THEM, us: 20, them: 25 }),
+    ])
+
+    const { wrapper } = await mountView()
+
+    const set = wrapper.get('[data-set="1"]')
+    const substitutions = set.get('[data-field="set-substitutions"]')
+    expect(substitutions.text()).toContain('Титов')
+    expect(substitutions.text()).toContain('Горобченко')
+    expect(substitutions.text()).toContain('Емельянов')
+    expect(substitutions.text()).toContain('исключительная')
+    expect(substitutions.findAll('li')).toHaveLength(2)
+
+    const pointLog = set.get('[data-field="point-log"]').element
+    expect(
+      pointLog.compareDocumentPosition(substitutions.element) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    expect(wrapper.find('[data-set="2"] [data-field="set-substitutions"]').exists()).toBe(false)
   })
 
   it('prints the summary', async () => {
@@ -263,6 +353,84 @@ describe('SummaryView', () => {
 
     expect(css).toContain('@media print')
     expect(css).toContain('.no-print')
+  })
+
+  it('offers a PDF download for the whole summary', async () => {
+    const { wrapper } = await mountView()
+
+    const button = wrapper.get('[data-action="pdf"]')
+    expect(button.text()).toBe('Скачать PDF')
+    expect(button.attributes('disabled')).toBeUndefined()
+  })
+
+  it('generates the PDF from the summary screen and saves it', async () => {
+    const { wrapper } = await mountView()
+
+    await wrapper.get('[data-action="pdf"]').trigger('click')
+    await flushPromises()
+
+    expect(generateSummaryPdf).toHaveBeenCalledTimes(1)
+    const [element, options] = generateSummaryPdf.mock.calls[0]
+    expect(element).toBe(wrapper.get('[data-field="pdf-summary"]').element)
+    expect(options).toEqual({ filename: 'match-summary-2026-10-29.pdf', singlePage: true })
+    expect(savePdf).toHaveBeenCalledWith(expect.any(Blob), 'match-summary-2026-10-29.pdf')
+  })
+
+  it('disables the PDF button while generating and ignores repeated clicks', async () => {
+    let finish
+    vi.mocked(generateSummaryPdf).mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+    )
+    const { wrapper } = await mountView()
+    const button = wrapper.get('[data-action="pdf"]')
+
+    await button.trigger('click')
+
+    expect(button.attributes('disabled')).toBeDefined()
+    expect(button.text()).toBe('Генерация…')
+
+    await button.trigger('click')
+    expect(generateSummaryPdf).toHaveBeenCalledTimes(1)
+
+    finish(new Blob(['pdf'], { type: 'application/pdf' }))
+    await flushPromises()
+
+    expect(button.attributes('disabled')).toBeUndefined()
+    expect(button.text()).toBe('Скачать PDF')
+  })
+
+  it('reports a PDF generation error', async () => {
+    vi.mocked(generateSummaryPdf).mockRejectedValue(new Error('boom'))
+    const { wrapper } = await mountView()
+    const button = wrapper.get('[data-action="pdf"]')
+
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-field="export-status"]').text()).toBe('Не удалось создать PDF')
+    expect(button.attributes('disabled')).toBeUndefined()
+  })
+
+  it('does not report a cancelled share as an error', async () => {
+    vi.mocked(savePdf).mockRejectedValue(
+      Object.assign(new Error('cancelled'), { name: 'AbortError' }),
+    )
+    const { wrapper } = await mountView()
+
+    await wrapper.get('[data-action="pdf"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-field="export-status"]').exists()).toBe(false)
+  })
+
+  it('keeps the PDF button in the installed iOS app', async () => {
+    stubNavigator('standalone', true)
+
+    const { wrapper } = await mountView()
+
+    expect(wrapper.find('[data-action="pdf"]').exists()).toBe(true)
   })
 
   it('starts a new game and returns to the lineup', async () => {
