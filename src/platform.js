@@ -3,18 +3,6 @@
  */
 
 /**
- * Приложение открыто с домашнего экрана iOS.
- *
- * В этом режиме WebKit игнорирует `window.print()`, поэтому кнопку печати
- * нужно заменять на выгрузку.
- *
- * @returns {boolean}
- */
-export function isIosStandalone() {
-  return window.navigator?.standalone === true
-}
-
-/**
  * Устройство на iOS/iPadOS.
  *
  * iPadOS 13+ представляется Mac'ом, поэтому одного user agent недостаточно:

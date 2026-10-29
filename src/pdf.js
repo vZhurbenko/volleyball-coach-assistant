@@ -129,12 +129,20 @@ export function pdfOptions({
       backgroundColor: '#ffffff',
       ignoreElements: (node) => node.classList?.contains('no-print') === true,
       onclone: (clonedDocument) => {
+        clonedDocument
+          .querySelectorAll('.table-wrap, .point-log__scroll')
+          .forEach((node) => {
+            node.scrollLeft = 0
+            node.scrollTop = 0
+          })
+
         const style = clonedDocument.createElement('style')
         style.textContent = `
           .point-log__scroll { max-height: none !important; overflow: visible !important; }
           .point-log__table thead th { position: static !important; }
           .stats-table { min-width: 0 !important; font-size: 0.72rem !important; }
           .stats-table th, .stats-table td { padding: 4px 3px !important; }
+          .stats-table th:first-child { position: static !important; box-shadow: none !important; }
           .table-wrap { overflow: visible !important; }
         `
         clonedDocument.head.append(style)
@@ -152,6 +160,22 @@ export function pdfOptions({
   }
 
   return options
+}
+
+function resetScrolls(element) {
+  return [...element.querySelectorAll('.table-wrap, .point-log__scroll')].map((node) => {
+    const saved = { node, scrollLeft: node.scrollLeft, scrollTop: node.scrollTop }
+    node.scrollLeft = 0
+    node.scrollTop = 0
+    return saved
+  })
+}
+
+function restoreScrolls(saved) {
+  for (const { node, scrollLeft, scrollTop } of saved) {
+    node.scrollLeft = scrollLeft
+    node.scrollTop = scrollTop
+  }
 }
 
 /** @returns {Promise<Blob>} */
@@ -181,7 +205,12 @@ export async function generateSummaryPdf(
   const { height } = source
   source.remove()
 
-  return await render(element, pdfOptions({ filename, height, isIos, singlePage }))
+  const savedScrolls = resetScrolls(element)
+  try {
+    return await render(element, pdfOptions({ filename, height, isIos, singlePage }))
+  } finally {
+    restoreScrolls(savedScrolls)
+  }
 }
 
 function canShareFile(file) {

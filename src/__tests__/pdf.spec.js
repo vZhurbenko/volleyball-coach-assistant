@@ -163,6 +163,37 @@ describe('generateSummaryPdf', () => {
     expect(clonedDoc.head.textContent).toContain('min-width: 0')
   })
 
+  it('starts the rendered copy at the left edge of the table', async () => {
+    const render = vi.fn().mockResolvedValue(new Blob())
+    await generateSummaryPdf(summaryFixture(), { render })
+
+    const clonedDoc = document.implementation.createHTMLDocument('clone')
+    const wrap = clonedDoc.createElement('div')
+    wrap.className = 'table-wrap'
+    Object.defineProperty(wrap, 'scrollLeft', { value: 300, writable: true, configurable: true })
+    Object.defineProperty(wrap, 'scrollTop', { value: 200, writable: true, configurable: true })
+    clonedDoc.body.append(wrap)
+
+    render.mock.calls[0][1].html2canvas.onclone(clonedDoc)
+
+    expect(wrap.scrollLeft).toBe(0)
+    expect(wrap.scrollTop).toBe(0)
+  })
+
+  it('resets the live scroll while rendering and restores it afterwards', async () => {
+    const section = summaryFixture()
+    const scroller = section.querySelector('.point-log__scroll')
+    Object.defineProperty(scroller, 'scrollTop', { value: 100, writable: true, configurable: true })
+    const render = vi.fn().mockImplementation((element) => {
+      expect(element.querySelector('.point-log__scroll').scrollTop).toBe(0)
+      return Promise.resolve(new Blob())
+    })
+
+    await generateSummaryPdf(section, { render })
+
+    expect(scroller.scrollTop).toBe(100)
+  })
+
   it('removes the measuring copy when rendering fails', async () => {
     const render = vi.fn().mockRejectedValue(new Error('boom'))
 
