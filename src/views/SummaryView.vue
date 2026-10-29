@@ -16,9 +16,7 @@ import {
   errorsTotal,
   pointsTotal,
 } from '../domain/stats.js'
-import { buildSummaryText } from '../domain/summary.js'
 import { buildPdfFilename, generateSummaryPdf, savePdf } from '../pdf.js'
-import { isIosStandalone } from '../platform.js'
 import { useLineupStore } from '../stores/lineup.js'
 import { useMatchStore } from '../stores/match.js'
 
@@ -38,8 +36,6 @@ const { roster } = storeToRefs(lineupStore)
 
 const STAT_TYPE_LIST = Object.values(STAT_TYPES)
 
-const standalone = isIosStandalone()
-const canShare = typeof navigator.share === 'function'
 const exportStatus = ref('')
 const isGenerating = ref(false)
 const summaryElement = ref(null)
@@ -76,36 +72,8 @@ const totalRows = computed(() =>
   })),
 )
 
-const summaryText = computed(() =>
-  state.value
-    ? buildSummaryText({ state: state.value, settings: settings.value, roster: roster.value })
-    : '',
-)
-
 function playerName(player) {
   return player ? `${player.firstName} ${player.lastName}` : '—'
-}
-
-function printSummary() {
-  window.print()
-}
-
-async function shareSummary() {
-  try {
-    await navigator.share({ title: 'Итоги матча', text: summaryText.value })
-    exportStatus.value = ''
-  } catch (error) {
-    if (error?.name !== 'AbortError') exportStatus.value = 'Не удалось поделиться'
-  }
-}
-
-async function copySummary() {
-  try {
-    await navigator.clipboard.writeText(summaryText.value)
-    exportStatus.value = 'Скопировано'
-  } catch {
-    exportStatus.value = 'Не удалось скопировать'
-  }
 }
 
 async function downloadPdf() {
@@ -170,27 +138,6 @@ function newGame() {
           @click="downloadPdf"
         >
           {{ isGenerating ? 'Генерация…' : 'Скачать PDF' }}
-        </button>
-        <button
-          v-if="!standalone"
-          type="button"
-          class="button-secondary no-print"
-          data-action="print"
-          @click="printSummary"
-        >
-          Печать
-        </button>
-        <button
-          v-if="canShare"
-          type="button"
-          class="no-print"
-          data-action="share"
-          @click="shareSummary"
-        >
-          Поделиться
-        </button>
-        <button type="button" class="no-print" data-action="copy" @click="copySummary">
-          Скопировать
         </button>
       </div>
 
@@ -482,7 +429,16 @@ function newGame() {
 }
 
 .stats-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
   width: 22%;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--line);
+}
+
+.stats-table thead th:first-child {
+  z-index: 2;
 }
 
 .stats-table th:not(:first-child) {

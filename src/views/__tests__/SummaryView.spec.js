@@ -133,14 +133,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks()
-  delete navigator.share
-  delete navigator.clipboard
-  delete navigator.standalone
 })
-
-function stubNavigator(name, value) {
-  Object.defineProperty(navigator, name, { configurable: true, value })
-}
 
 describe('SummaryView', () => {
   it('renders the match result and the set scores', async () => {
@@ -337,17 +330,6 @@ describe('SummaryView', () => {
     expect(wrapper.find('[data-set="2"] [data-field="set-substitutions"]').exists()).toBe(false)
   })
 
-  it('prints the summary', async () => {
-    const print = vi.spyOn(window, 'print').mockImplementation(() => {})
-    const { wrapper } = await mountView()
-
-    await wrapper.get('[data-action="print"]').trigger('click')
-
-    expect(print).toHaveBeenCalled()
-    expect(wrapper.get('[data-action="print"]').classes()).toContain('no-print')
-    expect(wrapper.get('[data-action="new-game"]').classes()).toContain('no-print')
-  })
-
   it('has print styles', () => {
     const css = readFileSync(resolve(cwd(), 'src/assets/main.css'), 'utf8')
 
@@ -425,14 +407,6 @@ describe('SummaryView', () => {
     expect(wrapper.find('[data-field="export-status"]').exists()).toBe(false)
   })
 
-  it('keeps the PDF button in the installed iOS app', async () => {
-    stubNavigator('standalone', true)
-
-    const { wrapper } = await mountView()
-
-    expect(wrapper.find('[data-action="pdf"]').exists()).toBe(true)
-  })
-
   it('starts a new game and returns to the lineup', async () => {
     const { wrapper, router } = await mountView()
 
@@ -454,49 +428,19 @@ describe('SummaryView', () => {
     expect(wrapper.get('[data-total-player="titov"]').text()).toContain('Титов-младший')
   })
 
-  it('hides printing and offers sharing in the installed iOS app', async () => {
-    stubNavigator('share', vi.fn().mockResolvedValue())
-    stubNavigator('standalone', true)
-
+  it('offers only the PDF download', async () => {
     const { wrapper } = await mountView()
 
+    expect(wrapper.find('[data-action="pdf"]').exists()).toBe(true)
     expect(wrapper.find('[data-action="print"]').exists()).toBe(false)
-    expect(wrapper.get('[data-action="share"]').text()).toBe('Поделиться')
-  })
-
-  it('shares the text summary', async () => {
-    const share = vi.fn().mockResolvedValue()
-    stubNavigator('share', share)
-
-    const { wrapper } = await mountView()
-
-    await wrapper.get('[data-action="share"]').trigger('click')
-    await flushPromises()
-
-    expect(share).toHaveBeenCalledWith({
-      title: 'Итоги матча',
-      text: expect.stringContaining('Наши — Динамо'),
-    })
-    expect(share.mock.calls[0][0].text).toContain('За матч')
-  })
-
-  it('copies the text summary and confirms it', async () => {
-    const writeText = vi.fn().mockResolvedValue()
-    stubNavigator('clipboard', { writeText })
-
-    const { wrapper } = await mountView()
-
-    await wrapper.get('[data-action="copy"]').trigger('click')
-    await flushPromises()
-
-    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Наши — Динамо'))
-    expect(wrapper.get('[data-field="export-status"]').text()).toBe('Скопировано')
-  })
-
-  it('hides sharing when the browser cannot share', async () => {
-    const { wrapper } = await mountView()
-
     expect(wrapper.find('[data-action="share"]').exists()).toBe(false)
-    expect(wrapper.get('[data-action="copy"]').exists()).toBe(true)
+    expect(wrapper.find('[data-action="copy"]').exists()).toBe(false)
+  })
+
+  it('freezes the player column while the stats scroll on a phone', () => {
+    const source = readFileSync(resolve(cwd(), 'src/views/SummaryView.vue'), 'utf8')
+
+    expect(source).toContain('position: sticky')
+    expect(source).toContain('left: 0')
   })
 })
