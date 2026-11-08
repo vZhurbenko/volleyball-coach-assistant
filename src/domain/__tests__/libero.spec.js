@@ -23,6 +23,19 @@ function lineupOf(assignments, liberoId = null) {
 /** Шестёрка базы 5-1 с либеро: ЦБ стоят в зонах 3 и 6. */
 const SIX = { ...defaultLineup(MOCK_ROSTER), liberoId: 'zimin' }
 
+/** Подающий ЦБ в зоне 1, второй ЦБ — в передней линии (зона 2). */
+const MIDDLE_BLOCKER_SERVES = lineupOf(
+  {
+    1: 'morozov',
+    2: 'volkov',
+    3: 'belov',
+    4: 'efimov',
+    5: 'lebedev',
+    6: 'sokolov',
+  },
+  'zimin',
+)
+
 const entry = (rotations, { lineup = SIX, serving = RECEIVING, liberoId = lineup.liberoId } = {}) =>
   liberoZone({ lineup, rotations, liberoId, serving })
 
@@ -31,8 +44,17 @@ describe('liberoZone', () => {
     expect(entry(0, { liberoId: null })).toBeNull()
   })
 
-  it('keeps the libero out while we serve', () => {
-    expect(entry(0, { serving: SERVING })).toBeNull()
+  it('keeps the libero on the back line while we serve when the middle blocker is not the server', () => {
+    // Подаёт связка из зоны 1, а ЦБ стоит в зоне 6 — либеро остаётся вместо него.
+    expect(entry(0, { serving: SERVING })).toBe(6)
+  })
+
+  it('leaves the court when the back-line middle blocker is the server', () => {
+    expect(entry(0, { lineup: MIDDLE_BLOCKER_SERVES, serving: SERVING })).toBeNull()
+  })
+
+  it('returns straight after the middle blocker loses the serve', () => {
+    expect(entry(0, { lineup: MIDDLE_BLOCKER_SERVES, serving: RECEIVING })).toBe(1)
   })
 
   it('sends the libero in for the back-line middle blocker', () => {
@@ -42,6 +64,13 @@ describe('liberoZone', () => {
   it('follows the back line through the whole rotation cycle', () => {
     const zones = [0, 1, 2, 3, 4, 5].map((rotations) => entry(rotations))
     expect(zones).toEqual([6, 5, 1, 6, 5, 1])
+  })
+
+  it('stays with the back-line middle blocker through our serves until he returns to the front line', () => {
+    const zones = [0, 1, 2, 3, 4, 5].map((rotations) =>
+      entry(rotations, { serving: SERVING }),
+    )
+    expect(zones).toEqual([6, 5, null, 6, 5, null])
   })
 
   it('brings the libero in and out with a single middle blocker', () => {
@@ -105,9 +134,25 @@ describe('playersOnCourt with a libero', () => {
     expect(court[3]).toBe('morozov')
   })
 
-  it('shows the middle blocker while we serve', () => {
+  it('keeps the libero on the back line while we serve', () => {
     const court = playersOnCourt(matchState(start(SERVING)))
-    expect(court[6]).toBe('volkov')
+    expect(court[6]).toBe('zimin')
+    expect(court[3]).toBe('morozov')
+  })
+
+  it('sends the middle blocker out to serve', () => {
+    const court = playersOnCourt(
+      matchState([{ type: EVENT_TYPES.SET_START, lineup: MIDDLE_BLOCKER_SERVES, serving: SERVING }]),
+    )
+    expect(court[1]).toBe('morozov')
+  })
+
+  it('keeps the libero on the back line on our serve after a side-out', () => {
+    const journal = [...start(RECEIVING), { type: EVENT_TYPES.POINT, team: TEAMS.US }]
+
+    const court = playersOnCourt(matchState(journal))
+    expect(court[5]).toBe('zimin')
+    expect(court[6]).toBe('belov')
   })
 
   it('moves the libero with the rotation', () => {

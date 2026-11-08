@@ -4,7 +4,9 @@ import { TEAMS } from './score.js'
 
 /**
  * Либеро выходит вместо ЦБ, оказавшегося на задней линии, и уходит, когда тот
- * возвращается на переднюю.
+ * возвращается на переднюю. Подавать либеро нельзя (FIVB 19.3.1.3), поэтому,
+ * когда подаёт заменяемый ЦБ из зоны 1, на площадку возвращается он, а либеро
+ * снова выходит сразу после потери этой подачи.
  *
  * Отдельных событий выхода либеро нет: он считается из состояния — расстановки,
  * ротации и подачи. Поэтому лимит замен либеро не расходует и в журнал не пишется.
@@ -18,7 +20,8 @@ import { TEAMS } from './score.js'
 const BACK_LINE = [1, 6, 5]
 
 /**
- * Где выходит либеро. Мы в приёме, когда подаёт соперник.
+ * Где выходит либеро: зона ЦБ на задней линии. Если мы подаём, а этот ЦБ стоит
+ * в зоне 1, на подачу выходит он — либеро в этот момент не на площадке.
  *
  * @param {object} params
  * @param {import('./lineup.js').Lineup} params.lineup — расстановка партии
@@ -28,10 +31,12 @@ const BACK_LINE = [1, 6, 5]
  * @returns {number | null} — зона, в которой стоит либеро, или null, если он не в игре
  */
 export function liberoZone({ lineup, rotations, liberoId, serving }) {
-  if (!liberoId || serving !== TEAMS.THEM) return null
+  if (!liberoId) return null
 
   const zone = BACK_LINE.find(
-    (each) => roleInZone(lineup, rotations, each) === ROLES.MIDDLE_BLOCKER,
+    (each) =>
+      roleInZone(lineup, rotations, each) === ROLES.MIDDLE_BLOCKER &&
+      !(serving === TEAMS.US && each === 1),
   )
 
   return zone ?? null
