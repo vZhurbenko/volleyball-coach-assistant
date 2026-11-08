@@ -197,16 +197,19 @@ describe('MatchView scoreboard', () => {
     expect(textOf(wrapper, 'points-us')).toBe('25')
   })
 
-  it('asks for confirmation before resetting and can be cancelled', async () => {
+  it('asks for confirmation in a modal before resetting and can be cancelled', async () => {
     saveWith([SET_START, ...points(TEAMS.US, 2)])
     const { wrapper } = await mountView()
 
     await wrapper.get('[data-action="reset"]').trigger('click')
-    expect(wrapper.get('[data-action="confirm-reset"]').exists()).toBe(true)
+
+    const dialog = wrapper.get('[role="alertdialog"]')
+    expect(dialog.attributes('aria-modal')).toBe('true')
+    expect(dialog.find('[data-action="confirm-reset"]').exists()).toBe(true)
 
     await wrapper.get('[data-action="cancel-reset"]').trigger('click')
 
-    expect(wrapper.find('[data-action="confirm-reset"]').exists()).toBe(false)
+    expect(wrapper.find('[role="alertdialog"]').exists()).toBe(false)
     expect(textOf(wrapper, 'points-us')).toBe('2')
     expect(loadMatch(storage)).not.toBeNull()
   })

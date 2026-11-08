@@ -188,17 +188,24 @@ function resetMatch() {
         </section>
       </div>
 
-      <div v-if="confirmingReset" class="reset-confirm" role="alert">
-        <p>Сбросить матч и вернуться к расстановке?</p>
-        <button type="button" data-action="confirm-reset" @click="resetMatch">Сбросить</button>
-        <button
-          type="button"
-          class="button-secondary"
-          data-action="cancel-reset"
-          @click="confirmingReset = false"
+      <div v-if="confirmingReset" class="reset-backdrop" data-field="reset-confirm">
+        <section
+          class="reset-confirm"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="reset-confirm-question"
         >
-          Отмена
-        </button>
+          <p id="reset-confirm-question">Сбросить матч и вернуться к расстановке?</p>
+          <button type="button" data-action="confirm-reset" @click="resetMatch">Сбросить</button>
+          <button
+            type="button"
+            class="button-secondary"
+            data-action="cancel-reset"
+            @click="confirmingReset = false"
+          >
+            Отмена
+          </button>
+        </section>
       </div>
     </template>
 
@@ -227,7 +234,8 @@ function resetMatch() {
   font-size: 0.9rem;
 }
 
-.set-end-backdrop {
+.set-end-backdrop,
+.reset-backdrop {
   position: fixed;
   inset: 0;
   z-index: 30;
@@ -238,7 +246,8 @@ function resetMatch() {
   background: rgb(28 35 41 / 45%);
 }
 
-.set-end-modal {
+.set-end-modal,
+.reset-confirm {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -308,18 +317,12 @@ function resetMatch() {
   gap: 8px;
 }
 
+/* Красная полоса отличает подтверждение сброса от модалки «партия завершена». */
 .reset-confirm {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--negative-line);
   border-left: 3px solid var(--danger);
-  border-radius: 10px;
-  background: var(--danger-bg);
 }
 
 .reset-confirm p {
-  color: var(--danger);
+  font-weight: 650;
 }
 </style>
