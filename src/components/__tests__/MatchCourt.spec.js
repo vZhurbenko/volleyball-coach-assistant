@@ -137,23 +137,44 @@ describe('MatchCourt in game mode', () => {
     expect(player.attributes('data-y')).toBe('73')
   })
 
-  it('shows the libero in play and hides them while we serve', () => {
-    const receiving = mountCourt(
+  it('shows the libero in play on the receive', () => {
+    const wrapper = mountCourt(
       [{ type: EVENT_TYPES.SET_START, lineup: LINEUP_WITH_LIBERO, serving: TEAMS.THEM }],
       { mode: 'game', roster: ROSTER_WITH_LIBERO },
     )
 
-    expect(receiving.findAll('[data-game-player]')).toHaveLength(6)
-    expect(receiving.find('[data-game-player="test-libero"]').exists()).toBe(true)
-    expect(receiving.find('[data-game-player="komissarov"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-game-player]')).toHaveLength(6)
+    expect(wrapper.find('[data-game-player="test-libero"]').exists()).toBe(true)
+    expect(wrapper.find('[data-game-player="komissarov"]').exists()).toBe(false)
+  })
 
-    const serving = mountCourt(
+  it('keeps the libero on the back line while we serve', () => {
+    const wrapper = mountCourt(
       [{ type: EVENT_TYPES.SET_START, lineup: LINEUP_WITH_LIBERO, serving: TEAMS.US }],
       { mode: 'game', roster: ROSTER_WITH_LIBERO },
     )
 
-    expect(serving.find('[data-game-player="test-libero"]').exists()).toBe(false)
-    expect(serving.find('[data-game-player="komissarov"]').exists()).toBe(true)
+    expect(wrapper.find('[data-game-player="test-libero"]').exists()).toBe(true)
+    expect(wrapper.find('[data-game-player="komissarov"]').exists()).toBe(false)
+  })
+
+  it('puts the middle blocker on court when he serves', () => {
+    const lineup = {
+      ...LINEUP_WITH_LIBERO,
+      zones: {
+        ...LINEUP_WITH_LIBERO.zones,
+        1: { playerId: 'komissarov', role: ROLES.MIDDLE_BLOCKER },
+        6: { playerId: 'titov', role: ROLES.OPPOSITE },
+      },
+    }
+
+    const wrapper = mountCourt(
+      [{ type: EVENT_TYPES.SET_START, lineup, serving: TEAMS.US }],
+      { roster: ROSTER_WITH_LIBERO },
+    )
+
+    expect(playerIn(wrapper, 1)).toBe('komissarov')
+    expect(wrapper.find('[data-player-id="test-libero"]').exists()).toBe(false)
   })
 
   it('emits the player id on tap', async () => {
