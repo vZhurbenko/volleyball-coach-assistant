@@ -124,7 +124,8 @@ export function removePlayerFromLineup(lineup, playerId) {
 /**
  * Переносит смену роли из состава в шестёрку. Меняются только роли-снапшоты,
  * которые всё ещё равны прежней роли; ручные переопределения сохраняются.
- * Переход в либеро убирает игрока из зон, уход из либеро чистит слот.
+ * Переход в либеро убирает игрока из зон; назначение либеро при смене роли
+ * сохраняется — либеро может быть игроком любой роли.
  *
  * @param {import('./lineup.js').Lineup} lineup
  * @param {string} playerId
@@ -133,7 +134,16 @@ export function removePlayerFromLineup(lineup, playerId) {
  * @returns {import('./lineup.js').Lineup}
  */
 export function applyRoleChange(lineup, playerId, previousRole, nextRole) {
-  if (nextRole === ROLES.LIBERO) return removePlayerFromLineup(lineup, playerId)
+  if (nextRole === ROLES.LIBERO) {
+    const zones = Object.fromEntries(
+      ZONES.map((zone) => {
+        const assignment = lineup?.zones?.[zone] ?? null
+        return [zone, assignment?.playerId === playerId ? null : assignment]
+      }),
+    )
+
+    return { zones, liberoId: lineup?.liberoId ?? null }
+  }
 
   const zones = Object.fromEntries(
     ZONES.map((zone) => {
@@ -146,15 +156,13 @@ export function applyRoleChange(lineup, playerId, previousRole, nextRole) {
     }),
   )
 
-  return {
-    zones,
-    liberoId: lineup?.liberoId === playerId ? null : (lineup?.liberoId ?? null),
-  }
+  return { zones, liberoId: lineup?.liberoId ?? null }
 }
 
 /**
  * Приводит сохранённую шестёрку в согласие с составом: убирает удалённых,
  * либеро в зонах и неизвестные роли. Используется при загрузке из хранилища.
+ * Либеро может быть игроком любой роли, но не из шестёрки — иначе слот пуст.
  *
  * @param {import('./lineup.js').Lineup | null} lineup
  * @param {import('./players.js').Player[]} roster
@@ -174,10 +182,9 @@ export function reconcileLineup(lineup, roster) {
     }),
   )
 
-  const libero = findPlayer(roster, lineup?.liberoId ?? null)
+  const liberoId = lineup?.liberoId ?? null
+  const inZone = ZONES.some((zone) => zones[zone]?.playerId === liberoId)
+  const libero = inZone ? null : findPlayer(roster, liberoId)
 
-  return {
-    zones,
-    liberoId: libero?.role === ROLES.LIBERO ? libero.id : null,
-  }
+  return { zones, liberoId: libero?.id ?? null }
 }

@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 
 import LineupCourt from '../components/LineupCourt.vue'
 import LineupPlayerDialog from '../components/LineupPlayerDialog.vue'
-import { ROLES } from '../domain/constants.js'
+import { ROLE_LABELS } from '../domain/constants.js'
 import { availablePlayersForZone } from '../domain/lineup.js'
 import { findPlayer } from '../domain/players.js'
 import { TEAMS, currentSet, isMatchOver, isSetOver } from '../domain/score.js'
@@ -30,7 +30,18 @@ const router = useRouter()
 
 const valid = computed(() => validation.value.valid)
 const violations = computed(() => validation.value.violations)
-const liberoPlayers = computed(() => roster.value.filter((player) => player.role === ROLES.LIBERO))
+/** Кого можно назначить либеро: все, кого нет в шестёрке. Текущий либеро виден всегда. */
+const liberoCandidates = computed(() => {
+  const onCourt = new Set(
+    Object.values(lineup.value.zones)
+      .map((assignment) => assignment?.playerId)
+      .filter(Boolean),
+  )
+
+  return roster.value.filter(
+    (player) => !onCourt.has(player.id) || player.id === lineup.value.liberoId,
+  )
+})
 const liberoName = computed(() => {
   const player = findPlayer(roster.value, lineup.value.liberoId)
   return player ? `${player.firstName} ${player.lastName}` : null
@@ -123,8 +134,9 @@ function startNextSet() {
         @change="setLibero"
       >
         <option value="">Без либеро</option>
-        <option v-for="player in liberoPlayers" :key="player.id" :value="player.id">
-          {{ player.number }} · {{ player.firstName }} {{ player.lastName }}
+        <option v-for="player in liberoCandidates" :key="player.id" :value="player.id">
+          {{ player.number }} · {{ player.firstName }} {{ player.lastName }} ·
+          {{ ROLE_LABELS[player.role] }}
         </option>
       </select>
       <p class="libero__status">

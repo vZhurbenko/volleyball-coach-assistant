@@ -234,30 +234,46 @@ describe('LineupView', () => {
     expect(router.currentRoute.value.name).toBe('setup')
   })
 
-  it('offers no libero when the team has none', async () => {
-    const { wrapper } = await mountView()
+  it('offers only the no-libero option when everyone is in the six', async () => {
+    const six = TEAM_ROSTER.filter((player) => player.startingZone != null)
+    const { wrapper } = await mountView(six)
 
     const options = wrapper.get('[data-field="libero"]').findAll('option')
 
     expect(options.map((option) => option.text())).toEqual(['Без либеро'])
   })
 
-  it('offers only libero players as libero', async () => {
+  it('offers every free player as libero, whatever their role', async () => {
     const { wrapper } = await mountView(ROSTER_WITH_LIBERO)
 
-    const options = wrapper.get('[data-field="libero"]').findAll('option')
+    const values = wrapper
+      .get('[data-field="libero"]')
+      .findAll('option')
+      .map((option) => option.element.value)
+      .filter(Boolean)
 
-    expect(options.map((option) => option.text())).toEqual(['Без либеро', '99 · Илья Тестов'])
+    expect(values).toHaveLength(6)
+    expect(values).toEqual(
+      expect.arrayContaining([
+        'zhurbenko',
+        'fatkulin',
+        'gorobchenko',
+        'emelyanov',
+        'timofeev',
+        'test-libero',
+      ]),
+    )
+    expect(values).not.toContain('titov')
   })
 
-  it('selects and removes the libero', async () => {
+  it('selects a free player of any role as libero and removes them', async () => {
     const { wrapper } = await mountView(ROSTER_WITH_LIBERO)
     const select = wrapper.get('[data-field="libero"]')
 
     expect(wrapper.text()).toContain('Либеро не выбран')
 
-    await select.setValue('test-libero')
-    expect(wrapper.text()).toContain('Либеро: Илья Тестов')
+    await select.setValue('fatkulin')
+    expect(wrapper.text()).toContain('Либеро: Рафкат Фаткулин')
 
     await select.setValue('')
     expect(wrapper.text()).toContain('Либеро не выбран')

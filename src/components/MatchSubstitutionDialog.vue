@@ -19,13 +19,14 @@ const incomingId = ref(null)
 const exceptional = ref(false)
 
 const left = computed(() => substitutionsLeft(props.state.substitutions))
+const liberoId = computed(() => props.state.lineup.liberoId)
 
 const onCourtPlayers = computed(() => {
   const zones = playersOnCourt(props.state)
 
   return ZONES.map((zone) => findPlayer(props.roster, zones[zone]))
     .filter(Boolean)
-    .filter((player) => player.role !== ROLES.LIBERO)
+    .filter((player) => player.role !== ROLES.LIBERO && player.id !== liberoId.value)
 })
 
 const onCourtIds = computed(() => new Set(onCourtPlayers.value.map((player) => player.id)))
@@ -35,6 +36,7 @@ const benchPlayers = computed(() =>
     (player) =>
       !onCourtIds.value.has(player.id) &&
       player.role !== ROLES.LIBERO &&
+      player.id !== liberoId.value &&
       !props.state.substitutions.retired.includes(player.id),
   ),
 )

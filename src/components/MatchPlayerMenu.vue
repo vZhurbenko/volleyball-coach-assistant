@@ -4,6 +4,8 @@ import { STAT_LABELS, STAT_TONES, STAT_TYPES } from '../domain/stats.js'
 
 defineProps({
   player: { type: Object, required: true },
+  /** Роль на площадке: у назначенного либеро — «Либеро», какую бы роль он ни имел. */
+  role: { type: String, default: null },
 })
 
 const emit = defineEmits(['stat', 'close'])
@@ -19,7 +21,7 @@ const STAT_OPTIONS = Object.values(STAT_TYPES).map((type) => ({
   <div class="dialog-backdrop" @click.self="emit('close')">
     <section class="menu" role="dialog" aria-modal="true" aria-labelledby="player-menu-title">
       <h2 id="player-menu-title">{{ player.firstName }} {{ player.lastName }}</h2>
-      <p class="menu__meta">№{{ player.number }} · {{ ROLE_LABELS[player.role] }}</p>
+      <p class="menu__meta">№{{ player.number }} · {{ ROLE_LABELS[role ?? player.role] }}</p>
 
       <div class="menu__stats">
         <button

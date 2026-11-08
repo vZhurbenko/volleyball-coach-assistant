@@ -58,10 +58,16 @@ const positions = computed(() => {
 const cells = computed(() =>
   COURT_ZONES.map((zone) => {
     const player = findPlayer(props.roster, onCourt.value[zone])
-    const role = player ? (lineupRoles.value[player.id] ?? player.role) : null
+    // Назначенный либеро — всегда «Либеро», какую бы роль он ни имел в составе.
+    const isLibero = player != null && player.id === props.state.lineup.liberoId
+    const role = player
+      ? isLibero
+        ? ROLES.LIBERO
+        : (lineupRoles.value[player.id] ?? player.role)
+      : null
     const point = positions.value[zone] ?? { x: 50, y: 50 }
 
-    return { zone, player, role, isLibero: role === ROLES.LIBERO, ...point }
+    return { zone, player, role, isLibero, ...point }
   }).filter((cell) => cell.player),
 )
 </script>

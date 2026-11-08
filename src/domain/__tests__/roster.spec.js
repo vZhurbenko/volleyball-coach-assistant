@@ -199,10 +199,18 @@ describe('applyRoleChange', () => {
     expect(next.zones[1].role).toBe(ROLES.SETTER)
   })
 
-  it('clears the libero slot when the player stops being a libero', () => {
+  it('keeps the libero slot when the player stops being a libero', () => {
     const lineup = lineupFrom({}, 'zimin')
 
-    expect(applyRoleChange(lineup, 'zimin', ROLES.LIBERO, ROLES.OUTSIDE_HITTER).liberoId).toBeNull()
+    expect(applyRoleChange(lineup, 'zimin', ROLES.LIBERO, ROLES.OUTSIDE_HITTER).liberoId).toBe(
+      'zimin',
+    )
+  })
+
+  it('keeps a designated libero who becomes a libero', () => {
+    const lineup = lineupFrom({}, 'efimov')
+
+    expect(applyRoleChange(lineup, 'efimov', ROLES.OPPOSITE, ROLES.LIBERO).liberoId).toBe('efimov')
   })
 
   it('removes the player from the zones when they become a libero', () => {
@@ -223,7 +231,7 @@ describe('reconcileLineup', () => {
         3: { playerId: 'morozov', role: 'coach' },
         4: { playerId: 'efimov', role: ROLES.OPPOSITE },
       },
-      'belov',
+      'ghost',
     )
 
     const next = reconcileLineup(lineup, MOCK_ROSTER)
@@ -240,5 +248,20 @@ describe('reconcileLineup', () => {
 
     expect(next.zones).toEqual(emptyZones())
     expect(next.liberoId).toBe('zimin')
+  })
+
+  it('keeps a libero of any role', () => {
+    const next = reconcileLineup({ zones: { 1: null }, liberoId: 'gusev' }, MOCK_ROSTER)
+
+    expect(next.liberoId).toBe('gusev')
+  })
+
+  it('clears a libero who is also in the six', () => {
+    const next = reconcileLineup(
+      { zones: { 1: { playerId: 'belov', role: ROLES.SETTER } }, liberoId: 'belov' },
+      MOCK_ROSTER,
+    )
+
+    expect(next.liberoId).toBeNull()
   })
 })

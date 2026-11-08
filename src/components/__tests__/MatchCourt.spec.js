@@ -177,6 +177,20 @@ describe('MatchCourt in game mode', () => {
     expect(wrapper.find('[data-player-id="test-libero"]').exists()).toBe(false)
   })
 
+  it('labels a libero of another role as a libero', () => {
+    const lineup = { ...defaultLineup(TEAM_ROSTER), liberoId: 'timofeev' }
+    const wrapper = mountCourt(
+      [{ type: EVENT_TYPES.SET_START, lineup, serving: TEAMS.THEM }],
+      { mode: 'game' },
+    )
+
+    const libero = gamePlayer(wrapper, 'timofeev')
+    expect(libero.text()).toContain('Либеро')
+    expect(libero.text()).not.toContain('Доигровщик')
+    expect(libero.classes()).toContain('court-half__player--libero')
+    expect(libero.attributes('aria-label')).toContain('Либеро')
+  })
+
   it('emits the player id on tap', async () => {
     const wrapper = mountCourt([START_US], { mode: 'game' })
 
