@@ -64,6 +64,7 @@ export function cloneLineup(lineup) {
 /**
  * Игроки, которых можно предложить для зоны: все, кроме либеро и уже занятых
  * в других зонах. Игрок из этой же зоны остаётся в списке — ему можно сменить роль.
+ * Назначенный либеро тоже недоступен: он не может стоять в шестёрке.
  *
  * @param {Lineup} lineup
  * @param {import('./players.js').Player[]} roster
@@ -78,7 +79,10 @@ export function availablePlayersForZone(lineup, roster, zone) {
   )
 
   return roster.filter(
-    (player) => player.role !== ROLES.LIBERO && !taken.has(player.id),
+    (player) =>
+      player.role !== ROLES.LIBERO &&
+      player.id !== lineup.liberoId &&
+      !taken.has(player.id),
   )
 }
 
@@ -174,18 +178,29 @@ function roleLimitViolations(filled) {
   return violations
 }
 
+/**
+ * Либеро может быть игроком любой роли, но не может одновременно стоять
+ * в шестёрке: он выходит вместо ЦБ задней линии.
+ */
 function liberoViolations(lineup, roster) {
   if (!lineup.liberoId) return []
 
-  const player = findPlayer(roster, lineup.liberoId)
-  if (player && player.role === ROLES.LIBERO) return []
+  if (!findPlayer(roster, lineup.liberoId)) {
+    return [{ code: 'LIBERO_NOT_FOUND', message: 'Либеро не найден в составе' }]
+  }
 
-  return [
-    {
-      code: 'NOT_A_LIBERO',
-      message: 'В либеро можно назначить только игрока с ролью «Либеро»',
-    },
-  ]
+  const zone = ZONES.find((each) => lineup.zones[each]?.playerId === lineup.liberoId)
+  if (zone) {
+    return [
+      {
+        code: 'LIBERO_IN_LINEUP',
+        zone,
+        message: 'Либеро не может одновременно стоять в шестёрке',
+      },
+    ]
+  }
+
+  return []
 }
 
 function fullName(roster, playerId) {

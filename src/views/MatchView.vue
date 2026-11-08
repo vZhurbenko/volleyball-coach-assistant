@@ -8,6 +8,7 @@ import MatchCourt from '../components/MatchCourt.vue'
 import MatchPlayerMenu from '../components/MatchPlayerMenu.vue'
 import MatchScoreboard from '../components/MatchScoreboard.vue'
 import MatchSubstitutionDialog from '../components/MatchSubstitutionDialog.vue'
+import { ROLES } from '../domain/constants.js'
 import { findPlayer } from '../domain/players.js'
 import { TEAMS, currentSet, isMatchOver, isSetOver, setWinner } from '../domain/score.js'
 import { useLineupStore } from '../stores/lineup.js'
@@ -31,6 +32,14 @@ const confirmingReset = ref(false)
 const selectedPlayer = ref(null)
 const substitutionOpen = ref(false)
 const courtMode = ref('protocol')
+
+const selectedPlayerRole = computed(() => {
+  if (!selectedPlayer.value) return null
+
+  return selectedPlayer.value.id === state.value?.lineup.liberoId
+    ? ROLES.LIBERO
+    : selectedPlayer.value.role
+})
 
 const currentSetScore = computed(() => (state.value ? currentSet(state.value.score) : null))
 const setOver = computed(() => (state.value ? isSetOver(currentSet(state.value.score)) : false))
@@ -148,6 +157,7 @@ function resetMatch() {
       <MatchPlayerMenu
         v-if="selectedPlayer"
         :player="selectedPlayer"
+        :role="selectedPlayerRole"
         @stat="recordStat"
         @close="selectedPlayer = null"
       />

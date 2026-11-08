@@ -87,6 +87,12 @@ describe('availablePlayersForZone', () => {
     expect(available.map((player) => player.id)).toContain('efimov')
   })
 
+  it('excludes the designated libero', () => {
+    const available = availablePlayersForZone(lineupFrom(VALID_SIX, 'gusev'), MOCK_ROSTER, 4)
+
+    expect(available.map((player) => player.id)).not.toContain('gusev')
+  })
+
   it('returns every court player for an empty lineup', () => {
     const courtPlayers = MOCK_ROSTER.filter((player) => player.role !== ROLES.LIBERO)
 
@@ -184,14 +190,19 @@ describe('validateLineup', () => {
     expect(result.valid).toBe(true)
   })
 
-  it('rejects a libero slot filled by a non-libero', () => {
+  it('accepts a libero of any role from the roster', () => {
+    const result = validateLineup(lineupFrom(VALID_SIX, 'gusev'), MOCK_ROSTER)
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects a libero who is also in the six', () => {
     const result = validateLineup(lineupFrom(VALID_SIX, 'sokolov'), MOCK_ROSTER)
-    expect(codesOf(result)).toContain('NOT_A_LIBERO')
+    expect(codesOf(result)).toContain('LIBERO_IN_LINEUP')
     expect(result.valid).toBe(false)
   })
 
   it('explains every violation in plain Russian', () => {
-    const result = validateLineup(lineupFrom({ ...VALID_SIX, 2: 'krylov' }, 'sokolov'), MOCK_ROSTER)
+    const result = validateLineup(lineupFrom({ ...VALID_SIX, 2: 'krylov' }, 'belov'), MOCK_ROSTER)
     expect(result.violations.length).toBeGreaterThan(1)
     for (const violation of result.violations) {
       expect(violation.code).toBeTruthy()

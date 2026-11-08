@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { ROLES } from '../../domain/constants.js'
 import { defaultLineup } from '../../domain/lineup.js'
 import { EVENT_TYPES, matchState } from '../../domain/match.js'
 import { TEAM_ROSTER } from '../../domain/__tests__/fixtures/team-roster.js'
@@ -245,6 +246,18 @@ describe('MatchView player stats menu', () => {
     }
   })
 
+  it('labels a libero of another role as a libero', async () => {
+    const lineup = { ...LINEUP, liberoId: 'timofeev' }
+    saveWith([{ type: EVENT_TYPES.SET_START, lineup, serving: TEAMS.THEM }])
+    const { wrapper } = await mountView()
+
+    await openMenu(wrapper, 6)
+
+    const dialog = wrapper.get('[role="dialog"]')
+    expect(dialog.text()).toContain('Либеро')
+    expect(dialog.text()).not.toContain('Доигровщик')
+  })
+
   it('marks positive and negative facts with tones', async () => {
     saveWith([SET_START])
     const { wrapper } = await mountView()
@@ -320,6 +333,40 @@ describe('MatchView substitutions', () => {
     await wrapper.get(`[data-sub-out="${outgoingId}"]`).trigger('click')
     await wrapper.get(`[data-sub-in="${incomingId}"]`).trigger('click')
   }
+
+  it('keeps the designated libero out of the substitution lists', async () => {
+    const lineup = { ...LINEUP, liberoId: 'timofeev' }
+    saveWith([{ type: EVENT_TYPES.SET_START, lineup, serving: TEAMS.THEM }])
+    const { wrapper } = await mountView()
+
+    await openSubstitutions(wrapper)
+
+    expect(wrapper.find('[data-sub-out="timofeev"]').exists()).toBe(false)
+    expect(wrapper.find('[data-sub-in="timofeev"]').exists()).toBe(false)
+    // Обычный запасной по-прежнему доступен.
+    expect(wrapper.find('[data-sub-in="gorobchenko"]').exists()).toBe(true)
+  })
+
+  it('keeps the designated libero off the bench list when he is not playing', async () => {
+    const lineup = {
+      ...LINEUP,
+      liberoId: 'timofeev',
+      zones: {
+        1: { playerId: 'titov', role: ROLES.OPPOSITE },
+        2: { playerId: 'gromov', role: ROLES.MIDDLE_BLOCKER },
+        3: { playerId: 'komissarov', role: ROLES.MIDDLE_BLOCKER },
+        4: { playerId: 'panchishkina', role: ROLES.SETTER },
+        5: { playerId: 'abroskin', role: ROLES.OUTSIDE_HITTER },
+        6: { playerId: 'verzhenovsky', role: ROLES.OUTSIDE_HITTER },
+      },
+    }
+    saveWith([{ type: EVENT_TYPES.SET_START, lineup, serving: TEAMS.US }])
+    const { wrapper } = await mountView()
+
+    await openSubstitutions(wrapper)
+
+    expect(wrapper.find('[data-sub-in="timofeev"]').exists()).toBe(false)
+  })
 
   it('makes a legal substitution and moves the player onto the court', async () => {
     saveWith([SET_START])

@@ -117,9 +117,16 @@ export const useLineupStore = defineStore('lineup', () => {
     persistSettings()
   }
 
-  /** @param {string | null} liberoId */
+  /**
+   * Либеро может быть игроком любой роли. Выбор запоминается в шаблоне состава,
+   * поэтому переживает партии и новые матчи, пока тренер его не поменяет.
+   *
+   * @param {string | null} liberoId
+   */
   function setLibero(liberoId) {
     lineup.value = { ...lineup.value, liberoId }
+    defaultSix.value = { ...defaultSix.value, liberoId }
+    persistSettings()
   }
 
   /**

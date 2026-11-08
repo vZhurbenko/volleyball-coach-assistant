@@ -180,17 +180,40 @@ describe('load', () => {
 })
 
 describe('working lineup and default six', () => {
-  it('does not persist edits made on the lineup screen', () => {
+  it('does not persist zone edits made on the lineup screen', () => {
     const storage = seededStorage()
     const store = useLineupStore()
     store.load(storage)
 
     store.assign(1, { playerId: 'fatkulin', role: ROLES.SETTER })
-    store.setLibero(null)
     store.setLineup({ ...DEFAULT_SIX, zones: { ...DEFAULT_SIX.zones, 1: null } })
 
     expect(store.lineup.zones[1]).toBeNull()
     expect(loadRosterSettings(storage).defaultLineup).toEqual(DEFAULT_SIX)
+  })
+
+  it('persists the libero choice to the roster settings', () => {
+    const storage = seededStorage()
+    const store = useLineupStore()
+    store.load(storage)
+
+    store.setLibero('timofeev')
+
+    expect(loadRosterSettings(storage).defaultLineup.liberoId).toBe('timofeev')
+    expect(loadRosterSettings(storage).defaultLineup.zones).toEqual(DEFAULT_SIX.zones)
+  })
+
+  it('restores a libero of any role from the storage', () => {
+    const storage = fakeStorage()
+    saveRosterSettings(
+      { players: storedRoster(), defaultLineup: { ...DEFAULT_SIX, liberoId: 'timofeev' } },
+      storage,
+    )
+
+    const store = useLineupStore()
+    store.load(storage)
+
+    expect(store.lineup.liberoId).toBe('timofeev')
   })
 
   it('updates both lineups and persists on assignDefault', () => {
@@ -364,7 +387,7 @@ describe('updatePlayer', () => {
     expect(loadRosterSettings(storage).defaultLineup.zones[1]).toBeNull()
   })
 
-  it('clears the libero slot when the libero becomes a court player', () => {
+  it('keeps the libero slot when the libero becomes a court player', () => {
     const storage = fakeStorage()
     saveRosterSettings(
       {
@@ -378,8 +401,8 @@ describe('updatePlayer', () => {
 
     store.updatePlayer('lib', { ...LIBERO, role: ROLES.OUTSIDE_HITTER })
 
-    expect(store.lineup.liberoId).toBeNull()
-    expect(loadRosterSettings(storage).defaultLineup.liberoId).toBeNull()
+    expect(store.lineup.liberoId).toBe('lib')
+    expect(loadRosterSettings(storage).defaultLineup.liberoId).toBe('lib')
   })
 
   it('rejects an unknown player and invalid input', () => {
